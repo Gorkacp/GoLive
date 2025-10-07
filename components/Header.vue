@@ -22,13 +22,13 @@
                 <a class="nav-link text-light active" aria-current="page" href="/conciertos">Conciertos</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link text-light" href="/festivales">Festivales</a>
+                <a class="nav-link text-light" href="#">Festivales</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link text-light" href="/blog">Blog</a>
+                <a class="nav-link text-light" href="#">Blog</a>
               </li>
               <li class="nav-item" v-if="userRole === 'admin'">
-                <a class="nav-link text-success" href="/crearEvento">Crear Evento</a>
+                <a class="nav-link text-success" href="#">Crear Evento</a>
               </li>
             </ul>
 
