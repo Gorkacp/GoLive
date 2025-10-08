@@ -28,7 +28,7 @@
                 <a class="nav-link text-light" href="#">Blog</a>
               </li>
               <li class="nav-item" v-if="userRole === 'admin'">
-                <a class="nav-link text-success" href="#">Crear Evento</a>
+                <a class="nav-link text-success" href="/crearEvento">Crear Evento</a>
               </li>
             </ul>
 
