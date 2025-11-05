@@ -57,15 +57,15 @@
 </template>
 
 <script setup>
-// Configuración del backend
-const API_BASE = 'http://localhost:8085' // ✅ Sin /api
+const config = useRuntimeConfig()
+const API_BASE = config.public.apiBase 
 
 const events = ref([])
 const filteredEvents = ref([])
 const loading = ref(true)
 const error = ref('')
 
-// Cargar eventos desde el backend MongoDB
+// Función para cargar eventos desde el backend MongoDB
 const loadEvents = async () => {
   loading.value = true
   error.value = ''
@@ -146,6 +146,7 @@ onMounted(() => {
   }
 })
 </script>
+
 
 <style scoped>
 .hero {
