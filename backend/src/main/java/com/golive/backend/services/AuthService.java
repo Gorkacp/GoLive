@@ -1,5 +1,5 @@
 // src/main/java/com/golive/backend/service/AuthService.java
-package com.golive.backend.service;
+package com.golive.backend.services;
 
 import com.golive.backend.dto.LoginRequest;
 import com.golive.backend.dto.RegisterRequest;

@@ -1,5 +1,5 @@
 // src/main/java/com/golive/backend/service/UserService.java
-package com.golive.backend.service;
+package com.golive.backend.services;
 
 import com.golive.backend.model.User;
 import com.golive.backend.repository.UserRepository;

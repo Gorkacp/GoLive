@@ -1,2 +1,3 @@
-Abrir backend: http://localhost:8085
-Abrir frontend: http://localhost:3000
+Abrir backend: D:\VS CODE\GoLive\backend>mvn spring-boot:run
+Abrir frontend: npm run dev
+

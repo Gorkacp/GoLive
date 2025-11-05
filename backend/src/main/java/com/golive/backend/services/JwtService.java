@@ -1,5 +1,5 @@
 // src/main/java/com/golive/backend/service/JwtService.java
-package com.golive.backend.service;
+package com.golive.backend.services;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
