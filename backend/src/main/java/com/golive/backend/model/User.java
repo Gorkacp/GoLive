@@ -24,7 +24,7 @@ public class User implements UserDetails {
 
     private String name;
     private String password;
-    private String role = "USER";
+    private String role = "user";
     private boolean enabled = true;
 
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -43,7 +43,7 @@ public class User implements UserDetails {
         this.name = name;
         this.password = password;
         this.role = role;
-        this.purchases = new ArrayList<>(); // ✅ siempre inicializada
+        this.purchases = new ArrayList<>(); 
     }
 
     // ======= Getters y Setters =======

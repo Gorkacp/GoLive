@@ -225,7 +225,7 @@ public class AuthController {
             
             long totalUsers = userService.countAllUsers();
             long adminUsers = userService.countUsersByRole("admin");
-            long superUsers = userService.countUsersByRole("SUPER_USER");
+            long superUsers = userService.countUsersByRole("super_user");
             long regularUsers = userService.countUsersByRole("user");
             
             UserStatsResponse stats = new UserStatsResponse(totalUsers, adminUsers, superUsers, regularUsers);
