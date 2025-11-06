@@ -4,117 +4,230 @@
       <h2>Registrarse</h2>
       <p class="subtitle">Crea tu cuenta para continuar</p>
 
-      <form @submit.prevent="registerUser" class="login-form">
+      <form @submit.prevent="handleRegister" class="login-form">
         <div class="input-group">
-          <input type="text" v-model="name" placeholder="Nombre completo" required />
+          <input 
+            type="text" 
+            v-model="form.name" 
+            placeholder="Nombre completo" 
+            required 
+            :disabled="loading"
+          />
         </div>
 
         <div class="input-group">
-          <input type="email" v-model="email" placeholder="Correo electrónico" required />
+          <input 
+            type="email" 
+            v-model="form.email" 
+            placeholder="Correo electrónico" 
+            required 
+            :disabled="loading"
+          />
         </div>
 
         <div class="input-group password-group">
-          <input type="password" v-model="password" placeholder="Contraseña (mínimo 6 caracteres)" required />
+          <input 
+            type="password" 
+            v-model="form.password" 
+            placeholder="Contraseña (mínimo 6 caracteres)" 
+            required 
+            :disabled="loading"
+            minlength="6"
+          />
         </div>
 
-        <button type="submit" :disabled="loading">
-          {{ loading ? 'Registrando...' : 'Registrarse' }}
+        <button 
+          type="submit" 
+          :disabled="loading || !isFormValid"
+          class="submit-btn"
+          :class="{ 'loading': loading }"
+        >
+          <span v-if="loading">
+            <i class="fas fa-spinner fa-spin"></i> Registrando...
+          </span>
+          <span v-else>Registrarse</span>
         </button>
       </form>
 
       <div v-if="errorMessage" class="alert alert-error">
+        <i class="fas fa-exclamation-circle"></i>
         {{ errorMessage }}
       </div>
 
       <div v-if="successMessage" class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
         {{ successMessage }}
       </div>
 
       <hr />
 
       <p class="register-text">
-        ¿Ya tienes cuenta? <NuxtLink to="/login">Inicia sesión</NuxtLink>
+        ¿Ya tienes cuenta? 
+        <NuxtLink to="/login" class="auth-link">Inicia sesión</NuxtLink>
       </p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { navigateTo } from '#app'
+import { ref, computed, reactive, watch } from 'vue'
 
-const name = ref('')
-const email = ref('')
-const password = ref('')
+// Obtener la configuración y asegurar un valor por defecto
+const config = useRuntimeConfig()
+const API_BASE = config.public.apiBase || 'https://backend-golive.onrender.com'
+
+// DEBUG: Verificar que la variable se carga correctamente
+console.log('🔧 Configuración API_BASE:', {
+  fromConfig: config.public.apiBase,
+  finalValue: API_BASE,
+  isProduction: !process.dev
+})
+
+// Reactive form state
+const form = reactive({
+  name: '',
+  email: '',
+  password: ''
+})
+
+// UI state
 const errorMessage = ref('')
 const successMessage = ref('')
 const loading = ref(false)
 
-const registerUser = async () => {
-  if (password.value.length < 6) {
-    errorMessage.value = 'La contraseña debe tener al menos 6 caracteres'
-    return
+// Computed properties
+const isFormValid = computed(() => {
+  return form.name.trim() && 
+         form.email.trim() && 
+         form.password.length >= 6 &&
+         isValidEmail(form.email)
+})
+
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+// Methods
+const validateForm = () => {
+  errorMessage.value = ''
+
+  if (!form.name.trim()) {
+    errorMessage.value = 'El nombre es obligatorio'
+    return false
   }
+
+  if (!form.email.trim()) {
+    errorMessage.value = 'El email es obligatorio'
+    return false
+  }
+
+  if (!isValidEmail(form.email)) {
+    errorMessage.value = 'Por favor ingresa un email válido'
+    return false
+  }
+
+  if (form.password.length < 6) {
+    errorMessage.value = 'La contraseña debe tener al menos 6 caracteres'
+    return false
+  }
+
+  return true
+}
+
+const handleRegister = async () => {
+  if (!validateForm()) return
 
   loading.value = true
   errorMessage.value = ''
   successMessage.value = ''
 
   try {
-    const response = await fetch('http://localhost:8085/api/auth/register', {
+    const endpoint = `${API_BASE}/api/auth/register`
+    console.log('🔄 Enviando solicitud de registro a:', endpoint)
+
+    const response = await $fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        name: name.value,
-        email: email.value,
-        password: password.value
-      })
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+        password: form.password
+      }),
+      timeout: 15000 // 15 seconds timeout
     })
 
-    const text = await response.text()
-    let data
-    try {
-      data = JSON.parse(text)
-    } catch (e) {
-      errorMessage.value = 'Respuesta inválida del servidor.'
-      return
-    }
+    console.log('✅ Respuesta del servidor recibida:', response)
 
-    if (response.ok) {
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify({
-        email: data.email,
-        name: data.name,
-        role: data.role
-      }))
-
-      // Redirigir directamente sin alertas molestas
-      navigateTo('/')
+    if (response.token && response.user) {
+      // Store authentication data
+      localStorage.setItem('token', response.token)
+      localStorage.setItem('user', JSON.stringify(response.user))
+      
+      successMessage.value = '¡Registro exitoso! Redirigiendo...'
+      
+      // Redirect after short delay
+      setTimeout(() => {
+        navigateTo('/')
+      }, 1500)
     } else {
-      errorMessage.value = data.message || 'Error al registrarse.'
+      throw new Error('Respuesta inválida del servidor')
     }
+
   } catch (error) {
-    errorMessage.value = 'No se pudo conectar al servidor.'
+    console.error('❌ Error en registro:', {
+      error: error,
+      message: error.message,
+      status: error.status,
+      data: error.data
+    })
+    
+    if (error.status === 409) {
+      errorMessage.value = 'Este email ya está registrado'
+    } else if (error.status === 400) {
+      errorMessage.value = 'Datos de registro inválidos'
+    } else if (error.status === 0 || error.name === 'FetchError') {
+      errorMessage.value = 'Error de conexión con el servidor. Por favor, verifica que el backend esté funcionando.'
+    } else if (error.data?.message) {
+      errorMessage.value = error.data.message
+    } else if (error.message?.includes('timeout')) {
+      errorMessage.value = 'El servidor está tardando demasiado en responder. Intenta nuevamente.'
+    } else {
+      errorMessage.value = 'Error inesperado. Por favor, intenta nuevamente.'
+    }
   } finally {
     loading.value = false
   }
 }
+
+// Clear messages when user starts typing
+watch([() => form.name, () => form.email, () => form.password], () => {
+  if (errorMessage.value || successMessage.value) {
+    errorMessage.value = ''
+    successMessage.value = ''
+  }
+})
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 
 .login-container {
   position: relative;
   background-image: url('https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8Zm9uZG8lMjBkZSUyMHBhbnRhbGxhJTIwZGUlMjBldmVudG9zfGVufDB8fDB8fHww&fm=jpg&q=60&w=3000');
   background-size: cover;
   background-position: center;
-  height: 100vh;
+  background-attachment: fixed;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-family: 'Montserrat', sans-serif;
-  overflow: hidden;
+  font-family: 'Poppins', sans-serif;
+  padding: 20px;
+  overflow: auto;
 }
 
 .login-container::before {
@@ -124,94 +237,220 @@ const registerUser = async () => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.55);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.4) 100%);
   z-index: 0;
 }
 
 .login-card {
   position: relative;
   z-index: 1;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(15px);
-  border-radius: 20px;
-  padding: 45px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 3rem;
   width: 100%;
-  max-width: 400px;
-  color: #fff;
+  max-width: 440px;
+  color: #ffffff;
   text-align: center;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 h2 {
-  margin-bottom: 15px;
-  font-size: 28px;
+  margin-bottom: 0.75rem;
+  font-size: 2.25rem;
   font-weight: 700;
-  color: #ffffff;
+  background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .subtitle {
-  font-size: 16px;
-  margin-bottom: 25px;
+  font-size: 1rem;
+  margin-bottom: 2rem;
   font-weight: 500;
-  color: #ffffff;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+}
+
+.login-form {
+  margin-bottom: 1.5rem;
+}
+
+.input-group {
+  margin-bottom: 1.25rem;
 }
 
 .input-group input {
   width: 100%;
-  padding: 14px;
-  border-radius: 25px;
-  border: none;
+  padding: 1rem 1.5rem;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
   outline: none;
-  margin-bottom: 18px;
-  background: rgba(255, 255, 255, 0.25);
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 .input-group input::placeholder {
-  color: #f0f0f0;
-  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
 }
 
-button {
+.input-group input:focus {
+  border-color: rgba(255, 182, 161, 0.8);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 4px rgba(255, 182, 161, 0.2);
+}
+
+.input-group input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.submit-btn {
   width: 100%;
-  background-color: #ffb6a1;
+  background: linear-gradient(135deg, #ffb6a1 0%, #ff9a8b 100%);
   border: none;
-  color: #222;
+  color: #1a1a1a;
   font-weight: 700;
-  border-radius: 25px;
-  padding: 14px;
-  font-size: 16px;
+  border-radius: 16px;
+  padding: 1rem 1.5rem;
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: 0.3s;
+  transition: all 0.3s ease;
+  margin-top: 0.5rem;
+  position: relative;
+  overflow: hidden;
 }
 
-button:hover {
-  background-color: #ffc1b0;
-  transform: scale(1.03);
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(255, 182, 161, 0.3);
+}
+
+.submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.submit-btn.loading {
+  pointer-events: none;
 }
 
 .alert {
-  margin-top: 15px;
-  padding: 10px;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 600;
+  margin: 1.25rem 0;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .alert-error {
-  background: rgba(255, 100, 100, 0.25);
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fecaca;
 }
 
 .alert-success {
-  background: rgba(100, 255, 100, 0.25);
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #bbf7d0;
+}
+
+hr {
+  border: none;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 2rem 0;
 }
 
 .register-text {
-  margin-top: 20px;
-  font-size: 15px;
-  color: #ffffff;
+  margin-top: 1.5rem;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.auth-link {
+  color: #ffb6a1;
+  text-decoration: none;
   font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.auth-link:hover {
+  color: #ff9a8b;
+  text-decoration: underline;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .login-container {
+    padding: 1rem;
+    align-items: flex-start;
+    padding-top: 2rem;
+  }
+
+  .login-card {
+    padding: 2rem 1.5rem;
+    margin: 1rem 0;
+  }
+
+  h2 {
+    font-size: 1.875rem;
+  }
+
+  .input-group input {
+    padding: 0.875rem 1.25rem;
+  }
+}
+
+/* Loading animation */
+.fa-spin {
+  animation: fa-spin 1s infinite linear;
+}
+
+@keyframes fa-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>
