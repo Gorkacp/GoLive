@@ -3,7 +3,7 @@
 // Inicialización profesional de MongoDB para plataforma de venta de entradas
 // -------------------
 
-db = db.getSiblingDB('golive'); // Base de datos principal
+db = db.getSiblingDB('GoLive');
 
 // -------------------
 // Colección: users
