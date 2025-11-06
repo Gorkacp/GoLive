@@ -5,7 +5,7 @@ COPY . .
 RUN mvn clean package -DskipTests
 
 # Etapa 2: ejecución
-FROM openjdk:21-jdk-slim
+FROM eclipse-temurin:21-jdk-focal AS runtime
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
