@@ -30,7 +30,7 @@ public class AuthService {
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole("USER");
+        user.setRole("user");
         
         return userService.save(user);
     }
@@ -54,7 +54,7 @@ public class AuthService {
             String cleanToken = token.replace("Bearer ", "");
             String userEmail = jwtService.getEmailFromToken(cleanToken);
             Optional<User> user = userService.findByEmail(userEmail);
-            return user.isPresent() && "SUPER_USER".equals(user.get().getRole());
+            return user.isPresent() && "super_user".equals(user.get().getRole());
         } catch (Exception e) {
             return false;
         }
@@ -72,7 +72,7 @@ public class AuthService {
             }
             
             return currentUser.get().getId().equals(userId) || 
-                   "SUPER_USER".equals(currentUser.get().getRole());
+                   "super_user".equals(currentUser.get().getRole());
         } catch (Exception e) {
             return false;
         }
