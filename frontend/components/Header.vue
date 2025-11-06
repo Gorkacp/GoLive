@@ -27,12 +27,14 @@
               <li class="nav-item">
                 <NuxtLink class="nav-link text-light" to="/blog">{{ $t('Blog') }}</NuxtLink>
               </li>
-              <li class="nav-item" v-if="userRole === 'ADMIN' || userRole === 'SUPER_USER'">
+
+              <li class="nav-item" v-if="userRole === 'admin' || userRole === 'super_user'">
                 <NuxtLink class="nav-link text-success" to="/crearEvento">
                   <i class="fas fa-plus-circle me-1"></i>{{ $t('Crear Evento') }}
                 </NuxtLink>
               </li>
-              <li class="nav-item" v-if="userRole === 'SUPER_USER'">
+
+              <li class="nav-item" v-if="userRole === 'super_user'">
                 <NuxtLink class="nav-link text-warning" to="/oficina">
                   <i class="fas fa-cog me-1"></i>{{ $t('Oficina') }}
                 </NuxtLink>
@@ -59,12 +61,16 @@
               <div class="text-light mb-3">
                 <strong>Hola, {{ userData?.name }}</strong><br>
                 <small>{{ userData?.email }}</small><br>
-                <small class="badge" :class="getRoleBadgeClass(userRole)">{{ userRole }}</small>
+
+                <small class="badge" :class="getRoleBadgeClass(userRole)">
+                  {{ userRole }}
+                </small>
               </div>
               <button @click="logout" class="btn btn-danger w-100">
                 <i class="fas fa-sign-out-alt me-1"></i>{{ $t('Cerrar sesión') }}
               </button>
             </template>
+
             <template v-else>
               <NuxtLink to="/login" class="btn btn-primary w-100 mb-2">
                 <i class="fas fa-sign-in-alt me-1"></i>{{ $t('Iniciar sesión') }}
@@ -96,7 +102,7 @@ const userData = ref(null)
 const busqueda = ref('')
 let searchTimeout = null
 
-const showSearch = computed(() => 
+const showSearch = computed(() =>
   ['/', '/conciertos', '/festivales'].includes(route.path)
 )
 
@@ -114,9 +120,9 @@ const buscar = () => {
 }
 
 const getRoleBadgeClass = (role) => {
-  switch(role) {
-    case 'SUPER_USER': return 'bg-warning text-dark'
-    case 'ADMIN': return 'bg-success'
+  switch (role) {
+    case 'super_user': return 'bg-warning text-dark'
+    case 'admin': return 'bg-success'
     default: return 'bg-secondary'
   }
 }
@@ -125,7 +131,7 @@ const loadUserFromStorage = () => {
   if (process.client) {
     const userStr = localStorage.getItem('user')
     const token = localStorage.getItem('token')
-    
+
     if (userStr && token) {
       try {
         userData.value = JSON.parse(userStr)
