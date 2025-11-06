@@ -5,8 +5,8 @@ COPY . .
 RUN mvn clean package -DskipTests
 
 # Etapa 2: ejecución
-FROM eclipse-temurin:21-jdk-focal AS runtime
+FROM eclipse-temurin:21-jdk AS runtime
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
-EXPOSE 8080
+EXPOSE 8085
 ENTRYPOINT ["java", "-jar", "app.jar"]
