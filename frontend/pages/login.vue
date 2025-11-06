@@ -114,15 +114,21 @@ const loginUser = async () => {
 
     console.log('✅ Respuesta login recibida:', response)
 
-    if (response.token && response.user) {
+    // ✅ Validación correcta
+    if (response.token) {
+
+      // ✅ Guardar token
       localStorage.setItem('token', response.token)
+
+      // ✅ Guardar usuario
       localStorage.setItem('user', JSON.stringify({
-        email: response.user.email,
-        name: response.user.name,
-        role: response.user.role
+        email: response.email,
+        name: response.name,
+        role: response.role,
+        type: response.type || "Bearer"
       }))
 
-      // Guardar o eliminar los datos según el checkbox
+      // ✅ Recordarme
       if (remember.value) {
         localStorage.setItem('rememberedEmail', email.value)
         localStorage.setItem('rememberedPassword', password.value)
@@ -131,24 +137,22 @@ const loginUser = async () => {
         localStorage.removeItem('rememberedPassword')
       }
 
-      // Redirigir sin mostrar mensaje
+      // ✅ Redirigir
       navigateTo('/')
-    } else {
-      throw new Error('Respuesta inválida del servidor')
+      return
     }
+
+    throw new Error('Respuesta inválida del servidor')
+
   } catch (error) {
     console.error('❌ Error en login:', error)
-    
+
     if (error.status === 401) {
       errorMessage.value = 'Email o contraseña incorrectos'
     } else if (error.status === 400) {
       errorMessage.value = 'Datos de login inválidos'
     } else if (error.status === 0 || error.name === 'FetchError') {
-      errorMessage.value = 'Error de conexión con el servidor. Verifica que el backend esté funcionando.'
-    } else if (error.data?.message) {
-      errorMessage.value = error.data.message
-    } else if (error.message?.includes('timeout')) {
-      errorMessage.value = 'El servidor está tardando demasiado en responder. Intenta nuevamente.'
+      errorMessage.value = 'Error de conexión con el servidor.'
     } else {
       errorMessage.value = 'Error inesperado. Por favor, intenta nuevamente.'
     }
@@ -156,6 +160,7 @@ const loginUser = async () => {
     loading.value = false
   }
 }
+
 
 // Limpiar mensajes cuando el usuario empiece a escribir
 watch([email, password], () => {
