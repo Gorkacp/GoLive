@@ -1,4 +1,3 @@
-// src/main/java/com/golive/backend/service/UserService.java
 package com.golive.backend.services;
 
 import com.golive.backend.model.User;
@@ -15,7 +14,7 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class UserService implements UserDetailsService {
-    
+
     private final UserRepository userRepository;
 
     @Override
@@ -24,6 +23,7 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + email));
     }
 
+    // Métodos CRUD
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
@@ -56,12 +56,12 @@ public class UserService implements UserDetailsService {
         return userRepository.countByRole(role);
     }
 
-    // Método para buscar usuarios (opcional)
     public List<User> searchUsers(String query) {
         return userRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(query, query);
     }
 
-    public User saveUser(User user) {
-    return userRepository.save(user);
+    // ======> NUEVO: Método necesario para recuperación de contraseña
+    public Optional<User> findByResetPasswordToken(String token) {
+        return userRepository.findByResetPasswordToken(token);
     }
 }

@@ -1,4 +1,3 @@
-// src/main/java/com/golive/backend/service/AuthService.java
 package com.golive.backend.services;
 
 import com.golive.backend.dto.LoginRequest;
@@ -11,44 +10,49 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-    
+
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final EmailService emailService; // <-- Inyectamos EmailService
 
+    // Registro
     public User register(RegisterRequest request) {
         if (userService.existsByEmail(request.getEmail())) {
             throw new RuntimeException("El email ya está registrado");
         }
-        
+
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole("user");
-        
+
         return userService.save(user);
     }
 
+    // Login
     public String login(LoginRequest request) {
         authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(
-                request.getEmail(),
-                request.getPassword()
-            )
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail(),
+                        request.getPassword()
+                )
         );
-        
+
         var user = userService.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        
+
         return jwtService.generateToken(request.getEmail());
     }
 
+    // Verificar SUPER_USER
     public boolean isSuperUser(String token) {
         try {
             String cleanToken = token.replace("Bearer ", "");
@@ -60,21 +64,57 @@ public class AuthService {
         }
     }
 
+    // Verificar acceso a usuario
     public boolean hasUserAccess(String token, String userId) {
         try {
             String cleanToken = token.replace("Bearer ", "");
             String userEmail = jwtService.getEmailFromToken(cleanToken);
             Optional<User> currentUser = userService.findByEmail(userEmail);
             Optional<User> targetUser = userService.findUserById(userId);
-            
+
             if (currentUser.isEmpty() || targetUser.isEmpty()) {
                 return false;
             }
-            
-            return currentUser.get().getId().equals(userId) || 
-                   "super_user".equals(currentUser.get().getRole());
+
+            return currentUser.get().getId().equals(userId) ||
+                    "super_user".equals(currentUser.get().getRole());
         } catch (Exception e) {
             return false;
         }
+    }
+
+    // Generar token de recuperación y enviar email
+    public String generatePasswordResetToken(String email) {
+        User user = userService.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // Generar token aleatorio
+        String token = UUID.randomUUID().toString();
+
+        // Guardar token y expiración (15 min)
+        user.setResetPasswordToken(token);
+        user.setResetPasswordExpiry(System.currentTimeMillis() + 15 * 60 * 1000);
+        userService.save(user);
+
+        // Enviar correo usando EmailService
+        emailService.sendPasswordResetEmail(user.getEmail(), token);
+
+        return token; // Devuelve token solo si quieres usarlo internamente
+    }
+
+    // Restablecer contraseña
+    public void resetPassword(String token, String newPassword) {
+        User user = userService.findByResetPasswordToken(token)
+                .orElseThrow(() -> new RuntimeException("Token inválido"));
+
+        if (user.getResetPasswordExpiry() == null || user.getResetPasswordExpiry() < System.currentTimeMillis()) {
+            throw new RuntimeException("Token expirado");
+        }
+
+        // Actualizar contraseña y limpiar token
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setResetPasswordToken(null);
+        user.setResetPasswordExpiry(null);
+        userService.save(user);
     }
 }

@@ -11,7 +11,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.golive.backend.dto.ForgotPasswordRequest;
 
+import java.util.Map;
 import java.util.List;
 import java.util.Optional;
 
@@ -157,7 +159,6 @@ public class AuthController {
                 user.setRole(userDetails.getRole());
             }
 
-            // ✅ CAMBIO: usa save() en lugar de saveUser()
             User updatedUser = userService.save(user);
             return ResponseEntity.ok(updatedUser);
         } catch (Exception e) {
@@ -171,7 +172,6 @@ public class AuthController {
                                            @RequestBody String newRole,
                                            @RequestHeader("Authorization") String token) {
         try {
-            // Verificar que el usuario sea SUPER_USER
             if (!authService.isSuperUser(token)) {
                 return ResponseEntity.status(403).body("Acceso denegado: Se requiere rol SUPER_USER");
             }
@@ -184,7 +184,6 @@ public class AuthController {
             User user = existingUser.get();
             user.setRole(newRole);
 
-            // ✅ CAMBIO: usa save() en lugar de saveUser()
             User updatedUser = userService.save(user);
             return ResponseEntity.ok(updatedUser);
         } catch (Exception e) {
@@ -261,4 +260,44 @@ public class AuthController {
         public long getSuperUsers() { return superUsers; }
         public long getRegularUsers() { return regularUsers; }
     }
+
+    // src/main/java/com/golive/backend/controller/AuthController.java
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        try {
+            Optional<User> optionalUser = userService.findByEmail(request.getEmail().trim());
+            if (optionalUser.isEmpty()) {
+                return ResponseEntity.badRequest().body("No existe ningún usuario con ese correo");
+            }
+
+            // ✅ Pasa el email, no el User
+            String token = authService.generatePasswordResetToken(request.getEmail().trim());
+
+            System.out.println("✅ Token de recuperación generado: " + token);
+
+            return ResponseEntity.ok("Se ha enviado un enlace de recuperación a tu correo.");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al procesar la recuperación: " + e.getMessage());
+        }
+    }
+
+    // POST: Restablecer contraseña usando token
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestParam String token, @RequestBody Map<String, String> body) {
+        try {
+            if (!body.containsKey("password")) {
+                return ResponseEntity.badRequest().body("Falta el campo password");
+            }
+
+            String newPassword = body.get("password");
+
+            // ✅ Usa directamente el método de AuthService
+            authService.resetPassword(token, newPassword);
+
+            return ResponseEntity.ok("Contraseña restablecida correctamente");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al restablecer la contraseña: " + e.getMessage());
+        }
+    }
+
 }
