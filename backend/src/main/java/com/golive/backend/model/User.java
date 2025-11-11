@@ -30,7 +30,6 @@ public class User implements UserDetails {
     private LocalDateTime createdAt = LocalDateTime.now();
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    // ✅ FIX: Lista inicializada correctamente (NO List.of(), NO null)
     private List<Object> purchases = new ArrayList<>();
 
     // ======= Constructores =======
@@ -97,4 +96,25 @@ public class User implements UserDetails {
 
     @Override
     public boolean isCredentialsNonExpired() { return true; }
+
+    // ======= Campos para recuperación de contraseña =======
+    private String resetPasswordToken;
+    private Long resetPasswordExpiry;
+
+    // ======= Getters y Setters para recuperación de contraseña =======
+    public String getResetPasswordToken() {
+        return resetPasswordToken;
+    }
+
+    public void setResetPasswordToken(String resetPasswordToken) {
+        this.resetPasswordToken = resetPasswordToken;
+    }
+
+    public Long getResetPasswordExpiry() {
+        return resetPasswordExpiry;
+    }
+
+    public void setResetPasswordExpiry(Long resetPasswordExpiry) {
+        this.resetPasswordExpiry = resetPasswordExpiry;
+    }
 }

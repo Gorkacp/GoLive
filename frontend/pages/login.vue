@@ -40,7 +40,10 @@
           <label>
             <input type="checkbox" v-model="remember" /> Recordarme
           </label>
-          <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+          <!-- Cambio aquí: href="javascript:void(0)" evita el # -->
+          <a href="javascript:void(0)" class="forgot-password" @click="openResetModal">
+            ¿Olvidaste tu contraseña?
+          </a>
         </div>
       </form>
 
@@ -55,18 +58,45 @@
         ¿No tienes cuenta? <NuxtLink to="/register" class="auth-link">Regístrate</NuxtLink>
       </p>
     </div>
+
+    <!-- Modal de recuperación de contraseña -->
+    <div class="modal fade" id="resetModal" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-custom">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="fas fa-key me-2"></i>
+              Recuperar contraseña
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p>Introduce tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.</p>
+            <input 
+              type="email" 
+              v-model="resetEmail" 
+              placeholder="Correo electrónico" 
+              class="modal-input" 
+              required
+              :disabled="resetLoading"
+            />
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" @click="sendResetEmail" :disabled="resetLoading">
+              <span v-if="resetLoading"><i class="fas fa-spinner fa-spin me-1"></i> Enviando...</span>
+              <span v-else>Enviar enlace</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-
-// Obtener la configuración de la API
-const config = useRuntimeConfig()
-const API_BASE = config.public.apiBase || 'https://backend-golive.onrender.com'
-
-// DEBUG: Verificar la URL de la API
-console.log('🔧 Login - API_BASE:', API_BASE)
+import { ref, onMounted, watch } from 'vue'
 
 const email = ref('')
 const password = ref('')
@@ -74,12 +104,97 @@ const remember = ref(false)
 const errorMessage = ref('')
 const loading = ref(false)
 
-// Computed para validar formulario
-const isFormValid = computed(() => {
-  return email.value.trim() && password.value.trim()
-})
+// Recuperación de contraseña
+const resetEmail = ref('')
+const resetLoading = ref(false)
+const resetMessage = ref('')
 
-// Cargar los datos guardados si el usuario eligió "Recordarme"
+// Obtener la base URL de la API
+const config = useRuntimeConfig()
+const apiBase = config.public.apiBase
+
+// Función login
+const loginUser = async () => {
+  if (!email.value || !password.value) return
+  loading.value = true
+  errorMessage.value = ''
+
+  try {
+    const response = await $fetch(`${apiBase}/api/auth/login`, {
+      method: 'POST',
+      body: { email: email.value.trim(), password: password.value },
+      headers: { 'Content-Type': 'application/json' }
+    })
+    if (response.token) {
+      localStorage.setItem('token', response.token)
+      localStorage.setItem('user', JSON.stringify({
+        email: response.email,
+        name: response.name,
+        role: response.role,
+        type: response.type || "Bearer"
+      }))
+      if (remember.value) {
+        localStorage.setItem('rememberedEmail', email.value)
+        localStorage.setItem('rememberedPassword', password.value)
+      } else {
+        localStorage.removeItem('rememberedEmail')
+        localStorage.removeItem('rememberedPassword')
+      }
+      navigateTo('/')
+    }
+  } catch (err) {
+    errorMessage.value = err.data?.message || 'Email o contraseña incorrectos'
+  } finally {
+    loading.value = false
+  }
+}
+
+// Abrir modal de recuperación
+const openResetModal = () => {
+  resetEmail.value = ''
+  resetMessage.value = ''
+  const modalEl = document.getElementById('resetModal')
+  if (modalEl) {
+    const modal = new bootstrap.Modal(modalEl)
+    modal.show()
+  }
+}
+
+// Enviar correo de recuperación
+const sendResetEmail = async () => {
+  if (!resetEmail.value) return
+  resetLoading.value = true
+  try {
+    await $fetch(`${apiBase}/api/auth/forgot-password`, {
+      method: 'POST',
+      body: { email: resetEmail.value.trim() },
+      headers: { 'Content-Type': 'application/json' }
+    })
+    alert('Se ha enviado un enlace de recuperación a tu correo.')
+    const modalEl = document.getElementById('resetModal')
+    bootstrap.Modal.getInstance(modalEl)?.hide()
+  } catch (err) {
+    alert(err.data?.message || 'Error al enviar el correo.')
+  } finally {
+    resetLoading.value = false
+  }
+}
+
+// Restablecer contraseña usando token (puedes usar otro componente o modal para esto)
+const resetPassword = async (token, newPassword) => {
+  try {
+    await $fetch(`${apiBase}/api/auth/reset-password?token=${token}`, {
+      method: 'POST',
+      body: { password: newPassword },
+      headers: { 'Content-Type': 'application/json' }
+    })
+    alert('Contraseña restablecida correctamente.')
+  } catch (err) {
+    alert(err.data?.message || 'Error al restablecer la contraseña.')
+  }
+}
+
+// Recordar usuario
 onMounted(() => {
   const savedEmail = localStorage.getItem('rememberedEmail')
   const savedPassword = localStorage.getItem('rememberedPassword')
@@ -90,85 +205,11 @@ onMounted(() => {
   }
 })
 
-const loginUser = async () => {
-  if (!isFormValid.value) return
-
-  loading.value = true
-  errorMessage.value = ''
-
-  try {
-    const endpoint = `${API_BASE}/api/auth/login`
-    console.log('🔄 Enviando login a:', endpoint)
-
-    const response = await $fetch(endpoint, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json' 
-      },
-      body: { 
-        email: email.value.trim().toLowerCase(), 
-        password: password.value 
-      },
-      timeout: 15000
-    })
-
-    console.log('✅ Respuesta login recibida:', response)
-
-    // ✅ Validación correcta
-    if (response.token) {
-
-      // ✅ Guardar token
-      localStorage.setItem('token', response.token)
-
-      // ✅ Guardar usuario
-      localStorage.setItem('user', JSON.stringify({
-        email: response.email,
-        name: response.name,
-        role: response.role,
-        type: response.type || "Bearer"
-      }))
-
-      // ✅ Recordarme
-      if (remember.value) {
-        localStorage.setItem('rememberedEmail', email.value)
-        localStorage.setItem('rememberedPassword', password.value)
-      } else {
-        localStorage.removeItem('rememberedEmail')
-        localStorage.removeItem('rememberedPassword')
-      }
-
-      // ✅ Redirigir
-      navigateTo('/')
-      return
-    }
-
-    throw new Error('Respuesta inválida del servidor')
-
-  } catch (error) {
-    console.error('❌ Error en login:', error)
-
-    if (error.status === 401) {
-      errorMessage.value = 'Email o contraseña incorrectos'
-    } else if (error.status === 400) {
-      errorMessage.value = 'Datos de login inválidos'
-    } else if (error.status === 0 || error.name === 'FetchError') {
-      errorMessage.value = 'Error de conexión con el servidor.'
-    } else {
-      errorMessage.value = 'Error inesperado. Por favor, intenta nuevamente.'
-    }
-  } finally {
-    loading.value = false
-  }
-}
-
-
-// Limpiar mensajes cuando el usuario empiece a escribir
-watch([email, password], () => {
-  if (errorMessage.value) {
-    errorMessage.value = ''
-  }
-})
+// Limpiar errores al escribir
+watch([email, password], () => { errorMessage.value = '' })
 </script>
+
+
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
