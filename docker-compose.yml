@@ -24,6 +24,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - MONGO_URI=mongodb://mongo:27017/golive
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
     networks:
       - golive_network
 

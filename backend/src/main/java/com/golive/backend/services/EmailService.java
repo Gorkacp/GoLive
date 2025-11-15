@@ -19,6 +19,13 @@ public class EmailService {
     @Value("${app.frontend.url:http://localhost:3000}")
     private String frontendUrl;
 
+    // Email y nombre del remitente (configurado en SendGrid)
+    @Value("${mail.from.address}")
+    private String fromAddress;
+
+    @Value("${mail.from.name}")
+    private String fromName;
+
     @Async
     public void sendPasswordResetEmail(String to, String token) {
         try {
@@ -29,17 +36,21 @@ public class EmailService {
             String text = "Hola,\n\nRecibimos una solicitud para restablecer tu contraseña. "
                     + "Haz clic en el siguiente enlace para cambiar tu contraseña:\n"
                     + resetLink
-                    + "\n\nSi no solicitaste este cambio, ignora este correo.";
+                    + "\n\nSi no solicitaste este cambio, ignora este correo.\n\n"
+                    + "Saludos,\n"
+                    + "El equipo de " + fromName;
 
             SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromAddress);
             message.setTo(to);
             message.setSubject(subject);
             message.setText(text);
 
             mailSender.send(message);
-            log.info("✅ Email de recuperación enviado a: {}", to);
+            log.info("✅ Email de recuperación enviado a {} desde {}", to, fromAddress);
         } catch (Exception e) {
             log.error("❌ Error al enviar email a {}: {}", to, e.getMessage());
+            throw new RuntimeException("Error al enviar email: " + e.getMessage());
         }
     }
 }
