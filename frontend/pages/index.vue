@@ -156,6 +156,48 @@
       </div>
     </div>
 
+    <!-- App Download Section -->
+    <div class="app-download-section">
+      <div class="app-download-container">
+        <div class="app-download-content">
+          <div class="app-download-text">
+            <h2 class="app-download-title">¡Ten tus entradas siempre a mano!</h2>
+            <p class="app-download-subtitle">Descarga la app de GoLive y gestiona tus entradas desde cualquier lugar</p>
+            
+            <div class="app-download-features">
+              <div class="feature-item">
+                <i class="bi bi-ticket-perforated"></i>
+                <span>Entradas siempre contigo</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-qr-code"></i>
+                <span>Código QR incluido</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-bell"></i>
+                <span>Notificaciones de eventos</span>
+              </div>
+            </div>
+
+            <div class="app-download-buttons">
+              <button class="btn-download btn-ios" @click="installApp('ios')" title="Descargar para iPhone">
+                <i class="bi bi-apple"></i>
+                <span>App Store</span>
+              </button>
+              <button class="btn-download btn-android" @click="installApp('android')" title="Descargar para Android">
+                <i class="bi bi-android2"></i>
+                <span>Play Store</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="app-download-visual">
+            <img :src="phone1" alt="GoLive App" class="phone-image" />
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Footer -->
     <Footer />
   </div>
@@ -164,6 +206,7 @@
 <script setup>
 import { useHead } from '#app'
 import EventCard from '~/components/EventCard.vue'
+import phone1 from '~/assets/img/phone1.png'
 
 useHead({
   title: 'Entradas para tus eventos | GoLive'
@@ -254,6 +297,33 @@ const filtrarEventos = (texto) => {
   }
 }
 
+// Funcionalidad de descarga de app (PWA Install)
+let deferredPrompt = null
+
+if (process.client) {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault()
+    deferredPrompt = e
+  })
+}
+
+const installApp = async (platform) => {
+  const appUrl = 'https://golive-hu5d.onrender.com/'
+  
+  // Usar el prompt de instalación nativo si está disponible
+  if (deferredPrompt) {
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      console.log('App instalada exitosamente')
+    }
+    deferredPrompt = null
+  } else {
+    // Abrir la URL de la aplicación
+    window.open(appUrl, '_blank')
+  }
+}
+
 // Cargar eventos al montar
 onMounted(() => loadEvents())
 
@@ -264,6 +334,24 @@ if (process.client) {
       if (!document.hidden) loadEvents()
     })
   })
+}
+
+// Función para obtener la URL correcta de la imagen del teléfono
+const getPhoneImageUrl = () => {
+  if (filteredEvents.value.length > 0 && filteredEvents.value[0].img) {
+    let imgUrl = filteredEvents.value[0].img
+    // Si la ruta ya empieza con /, usarla tal cual
+    if (imgUrl.startsWith('/')) {
+      return imgUrl
+    }
+    // Si no, agregar /assets/img/ al inicio
+    if (!imgUrl.includes('/assets/img/')) {
+      return `/assets/img/${imgUrl}`
+    }
+    return imgUrl
+  }
+  // Fallback por defecto - usar imagen importada
+  return phoneImage
 }
 </script>
 
@@ -856,5 +944,544 @@ html, body {
   width: 100vw !important;
   margin: 0 !important;
   padding: 0 !important;
+}
+
+/* ============ App Download Section ============ */
+.app-download-section {
+  background: linear-gradient(135deg, #8b0035 0%, #a03a14 100%);
+  padding: 60px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.app-download-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 15% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 85% 70%, rgba(0, 0, 0, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-download-section::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-download-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.app-download-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50px;
+  align-items: center;
+}
+
+.app-download-text {
+  color: #ffffff;
+}
+
+.app-download-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+
+.app-download-subtitle {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 400;
+  margin-bottom: 30px;
+  opacity: 0.95;
+  line-height: 1.5;
+}
+
+.app-download-features {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.feature-item i {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 10px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+}
+
+.app-download-buttons {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.phone-image {
+  max-width: 100%;
+  height: auto;
+  max-height: 600px;
+  object-fit: contain;
+  filter: drop-shadow(0 30px 80px rgba(0, 0, 0, 0.5));
+}
+
+.btn-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 28px;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.btn-download i {
+  font-size: 1.2rem;
+}
+
+.btn-ios {
+  background: #000000;
+  color: #ffffff;
+}
+
+.btn-ios:hover {
+  background: #1a1a1a;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.btn-android {
+  background: #ffffff;
+  color: #ff0057;
+}
+
+.btn-android:hover {
+  background: #f5f5f5;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.app-download-visual {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.phone-mockup {
+  position: relative;
+  width: 260px;
+  height: 520px;
+  background: transparent;
+  border-radius: 50px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 
+    0 30px 80px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 8px #1a1a1a,
+    inset 0 0 0 10px #2a2a2a,
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+/* Notch del teléfono */
+.phone-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150px;
+  height: 24px;
+  background: #0a0a0a;
+  border-radius: 0 0 16px 16px;
+  z-index: 20;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+}
+
+.phone-screen {
+  width: 100%;
+  height: 100%;
+  background: #0a0a0a;
+  border-radius: 45px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: local !important;
+  background-clip: padding-box !important;
+}
+
+/* Overlay oscuro sobre la imagen */
+.phone-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Status bar */
+.status-bar {
+  background: transparent;
+  padding: 8px 16px 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.7rem;
+  color: #ffffff;
+  margin-top: 4px;
+  position: relative;
+  z-index: 2;
+}
+
+.status-time {
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+/* Header móvil */
+.mobile-header {
+  background: rgba(10, 10, 10, 0.8);
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 2;
+  backdrop-filter: blur(10px);
+}
+
+.header-brand {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ff0057;
+  text-shadow: 0 0 8px rgba(255, 0, 87, 0.5);
+}
+
+.header-menu {
+  color: #ffffff;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+/* Screen content */
+.screen-content {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  background: transparent;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+  z-index: 2;
+}
+
+.screen-content::-webkit-scrollbar {
+  width: 3px;
+}
+
+.screen-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.screen-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+/* Mobile search bar */
+.mobile-search-bar {
+  background: #0a0a0a;
+  margin: 10px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid #ff0057;
+}
+
+.mobile-search-bar i {
+  color: #ff0057;
+  font-size: 0.9rem;
+}
+
+.mobile-search-bar input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 0.8rem;
+  outline: none;
+  font-family: 'Poppins', sans-serif;
+}
+
+.mobile-search-bar input::placeholder {
+  color: #888;
+}
+
+/* Mobile categories */
+.mobile-categories {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-categories::-webkit-scrollbar {
+  height: 0;
+}
+
+.cat-btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 2px solid #ff0057;
+  background: rgba(10, 10, 10, 0.7);
+  color: #ffffff;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.cat-btn:hover {
+  background: rgba(255, 0, 87, 0.2);
+}
+
+.cat-btn.active {
+  background: #ff0057;
+  border-color: #ff0057;
+}
+
+/* Event featured card */
+.mobile-event-featured {
+  margin: 10px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 0, 87, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.event-info-card {
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.event-label {
+  background: #ff6b35;
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+.event-title-featured {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.event-location-featured {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.7rem;
+  color: #b0b0b0;
+}
+
+/* ============ Responsive App Download ============ */
+@media (max-width: 768px) {
+  .app-download-section {
+    padding: 40px 15px;
+  }
+
+  .app-download-content {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .app-download-title {
+    font-size: 1.8rem;
+  }
+
+  .app-download-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .app-download-buttons {
+    gap: 12px;
+  }
+
+  .btn-download {
+    flex: 1;
+    padding: 12px 20px;
+    font-size: 0.9rem;
+  }
+
+  .btn-download i {
+    font-size: 1rem;
+  }
+
+  .phone-mockup {
+    width: 220px;
+    height: 440px;
+  }
+
+  .mobile-search-bar {
+    margin: 8px;
+    padding: 6px 10px;
+  }
+
+  .event-image-placeholder {
+    height: 100px;
+    font-size: 0.65rem;
+  }
+
+  .event-title-featured {
+    font-size: 0.8rem;
+  }
+
+  .feature-item {
+    font-size: 0.85rem;
+  }
+
+  .feature-item i {
+    font-size: 1rem;
+    width: 35px;
+    height: 35px;
+    padding: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-download-section {
+    padding: 30px 12px;
+  }
+
+  .app-download-title {
+    font-size: 1.5rem;
+  }
+
+  .app-download-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+  }
+
+  .app-download-features {
+    margin-bottom: 25px;
+    gap: 12px;
+  }
+
+  .app-download-buttons {
+    flex-direction: column;
+  }
+
+  .btn-download {
+    width: 100%;
+  }
+
+  .phone-mockup {
+    width: 200px;
+    height: 240px;
+  }
+
+  .header-brand {
+    font-size: 1rem;
+  }
+
+  .mobile-search-bar {
+    margin: 6px;
+    padding: 5px 8px;
+  }
+
+  .mobile-search-bar input {
+    font-size: 0.75rem;
+  }
+
+  .cat-btn {
+    padding: 6px 10px;
+    font-size: 0.65rem;
+  }
+
+  .event-image-placeholder {
+    height: 80px;
+    font-size: 0.6rem;
+  }
+
+  .event-title-featured {
+    font-size: 0.75rem;
+  }
+
+  .event-label {
+    font-size: 0.6rem;
+  }
+
+  .feature-item {
+    font-size: 0.8rem;
+  }
 }
 </style>

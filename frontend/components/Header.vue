@@ -153,14 +153,14 @@ onMounted(() => {
   if (process.client) {
     window.addEventListener('storage', loadUserFromStorage)
     
-    // Prevenir scroll horizontal cuando se abre/cierra offcanvas
+    // Permitir scroll dentro del offcanvas pero no en el body
     const offcanvasElement = document.getElementById('offcanvasNavbar')
     if (offcanvasElement) {
       offcanvasElement.addEventListener('show.bs.offcanvas', () => {
-        document.body.style.overflow = 'hidden'
+        document.documentElement.style.overflow = 'hidden'
       })
       offcanvasElement.addEventListener('hide.bs.offcanvas', () => {
-        document.body.style.overflow = ''
+        document.documentElement.style.overflow = ''
       })
     }
   }
@@ -171,7 +171,7 @@ onUnmounted(() => {
   if (process.client) {
     window.removeEventListener('storage', loadUserFromStorage)
     // Limpiar estilos cuando se desmonta el componente
-    document.body.style.overflow = ''
+    document.documentElement.style.overflow = ''
   }
 })
 
@@ -179,7 +179,7 @@ watch(() => route.path, () => {
   loadUserFromStorage()
   // Limpiar estilos de overflow al cambiar de ruta
   if (process.client) {
-    document.body.style.overflow = ''
+    document.documentElement.style.overflow = ''
   }
 })
 
