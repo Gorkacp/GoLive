@@ -152,6 +152,17 @@ onMounted(() => {
   loadUserFromStorage()
   if (process.client) {
     window.addEventListener('storage', loadUserFromStorage)
+    
+    // Prevenir scroll horizontal cuando se abre/cierra offcanvas
+    const offcanvasElement = document.getElementById('offcanvasNavbar')
+    if (offcanvasElement) {
+      offcanvasElement.addEventListener('show.bs.offcanvas', () => {
+        document.body.style.overflow = 'hidden'
+      })
+      offcanvasElement.addEventListener('hide.bs.offcanvas', () => {
+        document.body.style.overflow = ''
+      })
+    }
   }
 })
 
@@ -159,10 +170,18 @@ onUnmounted(() => {
   if (searchTimeout) clearTimeout(searchTimeout)
   if (process.client) {
     window.removeEventListener('storage', loadUserFromStorage)
+    // Limpiar estilos cuando se desmonta el componente
+    document.body.style.overflow = ''
   }
 })
 
-watch(() => route.path, () => loadUserFromStorage())
+watch(() => route.path, () => {
+  loadUserFromStorage()
+  // Limpiar estilos de overflow al cambiar de ruta
+  if (process.client) {
+    document.body.style.overflow = ''
+  }
+})
 
 const logout = () => {
   if (process.client) {
@@ -214,6 +233,13 @@ const setLanguage = (lang) => {
   100% { transform: scale(1); } 
 }
 
+/* Previene que offcanvas cause scroll horizontal */
+:global(body.offcanvas-open),
+:global(body.offcanvas-opening) {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
 .navbar-toggler { 
   border-color: rgba(255, 255, 255, 0.1); 
 }
@@ -225,6 +251,7 @@ const setLanguage = (lang) => {
 .offcanvas { 
   background-color: #0a0a0a; 
   font-family: 'Poppins', sans-serif;
+  max-width: 100vw !important;
 }
 
 .offcanvas-title { 

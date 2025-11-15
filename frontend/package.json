@@ -12,6 +12,7 @@
     "start": "node .output/server/index.mjs"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.1.0",
     "@pinia/nuxt": "^0.11.2",
     "@popperjs/core": "^2.11.8",
     "axios": "^1.6.0",
