@@ -172,4 +172,28 @@ h2 {
 .alert-error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #fecaca; }
 
 @keyframes slideIn { from { opacity:0; transform:translateX(-10px) } to { opacity:1; transform:translateX(0) } }
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .login-container {
+    padding: 1rem;
+    align-items: center;
+    min-height: 100vh;
+    height: 100vh;
+    background-attachment: scroll;
+  }
+
+  .login-card {
+    padding: 2rem 1.5rem;
+    margin: 2rem 0;
+  }
+
+  h2 {
+    font-size: 1.875rem;
+  }
+
+  .input-group input {
+    padding: 0.875rem 1.25rem;
+  }
+}
 </style>
