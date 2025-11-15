@@ -92,7 +92,9 @@
 </template>
 
 <script setup>
-// Configuración de la API - CORREGIDO: sin /api
+import { useHead } from '#app'
+
+// Configuración de la API
 const config = useRuntimeConfig()
 const API_BASE = config.public.apiBase || 'http://localhost:8085'
 
@@ -104,7 +106,9 @@ const event = ref({
   venue: '', 
   image: '', 
   zones: [],
-  _id: ''
+  _id: '',
+  description: '',
+  date: ''
 })
 const showPolicy = ref(false)
 const loading = ref(true)
@@ -123,18 +127,15 @@ const generateSlug = (title) => {
 // Computed con comisión incluida
 const total = computed(() => {
   if (!event.value.zones) return 0
-  
   let sum = event.value.zones.reduce((sum, z) => {
     const price = Number(z.price) || 0
     const quantity = Number(z.quantity) || 0
     return sum + (price * quantity)
   }, 0)
-  
   const totalComision = event.value.zones.reduce((sum, z) => {
     const quantity = Number(z.quantity) || 0
     return sum + (quantity * 1.5)
   }, 0)
-  
   return sum + totalComision
 })
 
@@ -144,7 +145,7 @@ const hasTicketsSelected = computed(() => {
   return event.value.zones.some(z => (z.quantity || 0) > 0)
 })
 
-// Cargar evento desde MongoDB - CORREGIDO: usa /events directamente
+// Cargar evento desde MongoDB
 const loadEvent = async () => {
   loading.value = true
   error.value = ''
@@ -152,26 +153,19 @@ const loadEvent = async () => {
   try {
     console.log('🔄 Cargando evento desde:', `${API_BASE}/events`)
     
-    // Obtener todos los eventos desde el endpoint correcto
     const response = await $fetch(`${API_BASE}/events`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Content-Type': 'application/json' }
     })
     
-    if (!Array.isArray(response)) {
-      throw new Error('Formato de respuesta inválido')
-    }
+    if (!Array.isArray(response)) throw new Error('Formato de respuesta inválido')
     
-    // Buscar el evento por slug
     const foundEvent = response.find(e => {
       const eventSlug = e.slug || generateSlug(e.title)
       return eventSlug === route.params.slug
     })
     
     if (foundEvent) {
-      // Inicializamos cantidad seleccionada a 0 en todas las zonas
       const zonesWithQuantity = (foundEvent.zones || []).map(zone => ({
         ...zone,
         price: Number(zone.price) || 0,
@@ -179,12 +173,21 @@ const loadEvent = async () => {
         quantity: 0
       }))
       
-      event.value = {
-        ...foundEvent,
-        zones: zonesWithQuantity
-      }
-      
+      event.value = { ...foundEvent, zones: zonesWithQuantity }
       console.log('✅ Evento cargado:', event.value.title)
+      
+      // --- SEO profesional dinámico ---
+      useHead({
+        title: `${event.value.title} | GoLive`,
+        meta: [
+          { name: 'description', content: event.value.description || 'Compra tus entradas para este evento en GoLive.' },
+          { property: 'og:title', content: `${event.value.title} | GoLive` },
+          { property: 'og:description', content: event.value.description || 'Compra tus entradas para este evento en GoLive.' },
+          { property: 'og:image', content: event.value.image || '/default-event.jpg' },
+          { property: 'og:type', content: 'event' }
+        ]
+      })
+      
     } else {
       error.value = 'Evento no encontrado'
       event.value.title = 'Evento no encontrado'
@@ -198,6 +201,7 @@ const loadEvent = async () => {
   }
 }
 
+// Función para ir a pago
 const goToPay = () => {
   if (!hasTicketsSelected.value) {
     alert('Selecciona al menos una entrada')
@@ -218,17 +222,12 @@ const goToPay = () => {
     total: total.value 
   }
   
-  // Guardar en localStorage
   localStorage.setItem('currentOrder', JSON.stringify(order))
-  
-  // Navegar a la página de pago
   router.push(`/pay/${generateSlug(event.value.title)}`)
 }
 
-// Cargar evento al montar el componente
-onMounted(() => {
-  loadEvent()
-})
+// Cargar evento al montar
+onMounted(() => loadEvent())
 </script>
 
 <style scoped>

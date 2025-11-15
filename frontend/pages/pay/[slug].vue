@@ -111,11 +111,11 @@
   <Footer />
 </template>
 
-
 <script setup>
 import { ref, reactive, watch, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from '#app'
 import { useCartStore } from '~/stores/cart'
+import { useHead } from '#app'
 
 const router = useRouter()
 const route = useRoute()
@@ -136,7 +136,7 @@ const generateSlug = (title) =>
        .replace(/(^-|-$)/g, '')
 
 // Datos del evento y tickets
-const event = ref({ title: 'Evento no encontrado', venue: '', image: '' })
+const event = ref({ title: 'Evento no encontrado', venue: '', image: '', description: '' })
 const tickets = ref([])
 const total = ref(0)
 
@@ -194,6 +194,18 @@ onMounted(async () => {
 
     // Total con comisión
     total.value = tickets.value.reduce((sum, t) => sum + t.price * t.quantity + t.quantity * COMMISSION, 0)
+
+    // SEO profesional dinámico para la página de pago
+    useHead({
+      title: `Pago - ${event.value.title} | GoLive`,
+      meta: [
+        { name: 'description', content: `Compra tus entradas para ${event.value.title} de forma segura con GoLive.` },
+        { property: 'og:title', content: `Pago - ${event.value.title} | GoLive` },
+        { property: 'og:description', content: `Compra tus entradas para ${event.value.title} de forma segura con GoLive.` },
+        { property: 'og:image', content: event.value.image || '/default-event.jpg' },
+        { property: 'og:type', content: 'website' }
+      ]
+    })
 
     // Guardar en localStorage siempre para la primera carga
     localStorage.setItem('currentOrder', JSON.stringify({ ...order, total: total.value }))

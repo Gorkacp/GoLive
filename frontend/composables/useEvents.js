@@ -7,19 +7,50 @@ export const useEvents = () => {
   }
 
   const createEvent = async (event) => {
-    const data = await $fetch(`${config.public.apiBase}/events`, {
-      method: 'POST',
-      body: event
-    })
-    return data
+    try {
+      // Asegurar tipos correctos antes de enviar
+      const eventData = {
+        ...event,
+        availableTickets: Number(event.availableTickets) || 0,
+        zones: event.zones?.map(z => ({
+          name: String(z.name),
+          price: Number(z.price),
+          availableTickets: Number(z.availableTickets)
+        })) || []
+      }
+      
+      const data = await $fetch(`${config.public.apiBase}/events`, {
+        method: 'POST',
+        body: eventData
+      })
+      return data
+    } catch (error) {
+      console.error('Error creando evento:', error)
+      throw error
+    }
   }
 
   const updateEvent = async (id, event) => {
-    const data = await $fetch(`${config.public.apiBase}/events/${id}`, {
-      method: 'PUT',
-      body: event
-    })
-    return data
+    try {
+      const eventData = {
+        ...event,
+        availableTickets: Number(event.availableTickets) || 0,
+        zones: event.zones?.map(z => ({
+          name: String(z.name),
+          price: Number(z.price),
+          availableTickets: Number(z.availableTickets)
+        })) || []
+      }
+      
+      const data = await $fetch(`${config.public.apiBase}/events/${id}`, {
+        method: 'PUT',
+        body: eventData
+      })
+      return data
+    } catch (error) {
+      console.error('Error actualizando evento:', error)
+      throw error
+    }
   }
 
   const deleteEvent = async (id) => {

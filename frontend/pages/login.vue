@@ -96,6 +96,11 @@
 </template>
 
 <script setup>
+import { useHead } from '#app'
+useHead({
+  title: 'Login | GoLive'
+})
+
 import { ref, onMounted, watch } from 'vue'
 
 const email = ref('')
@@ -212,8 +217,6 @@ watch([email, password], () => { errorMessage.value = '' })
 
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 
 .login-container {
   position: relative;

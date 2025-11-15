@@ -1,3 +1,3 @@
 <template>
-  <h1>Conciertos</h1>
+  <h1>festivales</h1>
 </template>
