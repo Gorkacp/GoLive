@@ -180,10 +180,6 @@
             </div>
 
             <div class="app-download-buttons">
-              <button class="btn-download btn-ios" @click="installApp('ios')" title="Descargar para iPhone">
-                <i class="bi bi-apple"></i>
-                <span>App Store</span>
-              </button>
               <button class="btn-download btn-android" @click="installApp('android')" title="Descargar para Android">
                 <i class="bi bi-android2"></i>
                 <span>Play Store</span>

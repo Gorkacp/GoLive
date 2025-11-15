@@ -429,13 +429,15 @@ hr {
 @media (max-width: 480px) {
   .login-container {
     padding: 1rem;
-    align-items: flex-start;
-    padding-top: 2rem;
+    align-items: center;
+    min-height: 100vh;
+    height: 100vh;
+    background-attachment: scroll;
   }
 
   .login-card {
     padding: 2rem 1.5rem;
-    margin: 1rem 0;
+    margin: 2rem 0;
   }
 
   h2 {
