@@ -40,19 +40,6 @@
                 </NuxtLink>
               </li>
             </ul>
-
-            <!-- Barra de búsqueda -->
-            <form v-if="showSearch" class="d-flex mt-3" role="search" @submit.prevent="buscar">
-              <input
-                v-model="busqueda"
-                class="form-control me-2"
-                type="search"
-                :placeholder="$t('Buscar')"
-                aria-label="Buscar"
-                @input="onBuscarInput"
-              />
-              <button class="btn btn-outline-success" type="submit">{{ $t('Buscar') }}</button>
-            </form>
           </div>
 
           <!-- Login / Logout -->
@@ -99,25 +86,6 @@ const route = useRoute()
 const userLogged = ref(false)
 const userRole = ref(null)
 const userData = ref(null)
-const busqueda = ref('')
-let searchTimeout = null
-
-const showSearch = computed(() =>
-  ['/', '/conciertos', '/festivales'].includes(route.path)
-)
-
-const emit = defineEmits(['buscar-evento'])
-
-const onBuscarInput = () => {
-  if (searchTimeout) clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
-    emit('buscar-evento', busqueda.value)
-  }, 300)
-}
-
-const buscar = () => {
-  emit('buscar-evento', busqueda.value)
-}
 
 const getRoleBadgeClass = (role) => {
   switch (role) {
@@ -158,28 +126,39 @@ onMounted(() => {
     if (offcanvasElement) {
       offcanvasElement.addEventListener('show.bs.offcanvas', () => {
         document.documentElement.style.overflow = 'hidden'
+        document.body.style.overflow = 'hidden'
       })
       offcanvasElement.addEventListener('hide.bs.offcanvas', () => {
         document.documentElement.style.overflow = ''
+        document.body.style.overflow = ''
       })
     }
   }
 })
 
 onUnmounted(() => {
-  if (searchTimeout) clearTimeout(searchTimeout)
   if (process.client) {
     window.removeEventListener('storage', loadUserFromStorage)
     // Limpiar estilos cuando se desmonta el componente
     document.documentElement.style.overflow = ''
+    document.body.style.overflow = ''
   }
 })
 
 watch(() => route.path, () => {
   loadUserFromStorage()
-  // Limpiar estilos de overflow al cambiar de ruta
+  // Limpiar estilos de overflow al cambiar de ruta y cerrar offcanvas
   if (process.client) {
     document.documentElement.style.overflow = ''
+    document.body.style.overflow = ''
+    // Cerrar offcanvas si está abierto
+    const offcanvasElement = document.getElementById('offcanvasNavbar')
+    if (offcanvasElement) {
+      const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasElement)
+      if (offcanvasInstance) {
+        offcanvasInstance.hide()
+      }
+    }
   }
 })
 
@@ -190,6 +169,9 @@ const logout = () => {
     userLogged.value = false
     userRole.value = null
     userData.value = null
+    // Limpiar overflow antes de navegar
+    document.documentElement.style.overflow = ''
+    document.body.style.overflow = ''
     navigateTo('/')
   }
 }
