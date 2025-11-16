@@ -1117,28 +1117,30 @@ onMounted(async () => {
   display: none;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  padding: 4px 6px;
-  background: transparent;
-  border: 1.5px solid #ff0057;
+  gap: 4px;
+  padding: 6px 10px;
+  background: linear-gradient(135deg, #ff0057 0%, #ff6b35 100%);
+  border: none;
   border-radius: 6px;
-  color: #ff0057;
+  color: #ffffff;
   font-family: 'Poppins', sans-serif;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 0.65rem;
+  font-size: 0.8rem;
   margin-top: 4px;
   align-self: flex-start;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .toggle-details-btn:hover {
-  background: rgba(255, 0, 87, 0.1);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 0, 87, 0.3);
 }
 
 .toggle-details-btn i {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   transition: transform 0.3s ease;
 }
 
@@ -1294,24 +1296,26 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
   width: 100%;
-  padding: 8px;
-  background: transparent;
-  border: 2px solid #ff0057;
+  padding: 10px;
+  background: linear-gradient(135deg, #ff0057 0%, #ff6b35 100%);
+  border: none;
   border-radius: 8px;
-  color: #ff0057;
+  color: #ffffff;
   font-family: 'Poppins', sans-serif;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 0.8rem;
-  margin-top: 4px;
+  font-size: 0.85rem;
+  margin-top: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .expand-button:hover {
-  background: rgba(255, 0, 87, 0.1);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 0, 87, 0.35);
 }
 
 .zone-header {
@@ -1795,6 +1799,7 @@ onMounted(async () => {
   z-index: 1000;
   padding: 20px;
   backdrop-filter: blur(2px);
+  overflow: hidden;
 }
 
 .modal-content {
@@ -1802,10 +1807,13 @@ onMounted(async () => {
   border-radius: 16px;
   max-width: 500px;
   width: 100%;
-  max-height: 90vh;
+  max-height: 80vh;
   overflow-y: auto;
+  overflow-x: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-close {
@@ -1835,6 +1843,7 @@ onMounted(async () => {
 .modal-header {
   padding: 24px;
   border-bottom: 2px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -1847,6 +1856,8 @@ onMounted(async () => {
 
 .modal-body {
   padding: 24px;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .info-section {
@@ -1945,6 +1956,7 @@ onMounted(async () => {
   border-top: 2px solid #e5e7eb;
   display: flex;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .btn-modal-close {
@@ -1994,7 +2006,7 @@ onMounted(async () => {
 
 @media (max-width: 768px) {
   .carrito-page {
-    background: #f3f4f6;
+    background: #0a0a0a;
   }
 
   .hero-section {
@@ -2294,12 +2306,95 @@ onMounted(async () => {
     gap: 4px;
   }
 
+  .toggle-details-btn {
+    padding: 6px 8px;
+    font-size: 0.75rem;
+  }
+
+  .expand-button {
+    padding: 8px;
+    font-size: 0.75rem;
+  }
+
   .modal-overlay {
     padding: 10px;
   }
 
   .modal-content {
-    max-width: 95%;
+    max-width: 100%;
+    max-height: 75vh;
+  }
+
+  .modal-header {
+    padding: 12px 14px;
+  }
+
+  .modal-header h3 {
+    font-size: 1.05rem;
+  }
+
+  .modal-body {
+    padding: 14px;
+    font-size: 0.85rem;
+  }
+
+  .modal-footer {
+    padding: 12px 14px;
+  }
+
+  .info-section {
+    margin-bottom: 16px;
+  }
+
+  .info-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .info-section h4 {
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+  }
+
+  .info-section p {
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+
+  .features-list li {
+    font-size: 0.8rem;
+    padding: 4px 0;
+    gap: 6px;
+  }
+
+  .features-list i {
+    font-size: 0.95rem;
+  }
+
+  .age-requirement-text {
+    font-size: 0.9rem;
+  }
+
+  .btn-download-doc {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+    gap: 6px;
+  }
+
+  .insurance-details {
+    font-size: 0.8rem;
+  }
+
+  .btn-modal-close {
+    padding: 10px;
+    font-size: 0.8rem;
+  }
+
+  .modal-close {
+    width: 32px;
+    height: 32px;
+    top: 12px;
+    right: 12px;
+    font-size: 1.3rem;
   }
 
   /* Hero Section Mobile - Only adjust meta items size */
