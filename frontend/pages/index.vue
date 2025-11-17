@@ -304,19 +304,13 @@ if (process.client) {
 }
 
 const installApp = async (platform) => {
-  const appUrl = 'https://golive-hu5d.onrender.com/'
-  
-  // Usar el prompt de instalación nativo si está disponible
   if (deferredPrompt) {
     deferredPrompt.prompt()
     const { outcome } = await deferredPrompt.userChoice
     if (outcome === 'accepted') {
-      console.log('App instalada exitosamente')
+      console.log('✅ App instalada')
     }
     deferredPrompt = null
-  } else {
-    // Abrir la URL de la aplicación
-    window.open(appUrl, '_blank')
   }
 }
 
