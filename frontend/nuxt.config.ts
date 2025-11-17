@@ -8,7 +8,8 @@ export default defineNuxtConfig({
   ],
 
   plugins: [
-    { src: '~/plugins/bootstrap.client.js', mode: 'client' }
+    { src: '~/plugins/bootstrap.client.js', mode: 'client' },
+    { src: '~/plugins/pwa.client.js', mode: 'client' }
   ],
 
   app: {
@@ -23,7 +24,13 @@ export default defineNuxtConfig({
         { rel: "icon", type: "image/png", sizes: "192x192", href: "/favicon_io/android-chrome-192x192.png" },
         { rel: "icon", type: "image/png", sizes: "512x512", href: "/favicon_io/android-chrome-512x512.png" },
 
-        { rel: "manifest", href: "/favicon_io/site.webmanifest" }
+        { rel: "manifest", href: "/site.webmanifest" }
+      ],
+      meta: [
+        { name: "theme-color", content: "#8b0035" },
+        { name: "mobile-web-app-capable", content: "yes" },
+        { name: "apple-mobile-web-app-capable", content: "yes" },
+        { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" }
       ]
     }
   },
