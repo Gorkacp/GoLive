@@ -26,7 +26,7 @@
               v-model="searchQuery" 
               type="text" 
               class="search-input" 
-              placeholder="Busca evento..." 
+              :placeholder="$t('Busca evento')" 
             />
           </div>
 
@@ -37,7 +37,7 @@
               v-model="locationFilter" 
               type="text" 
               class="search-input" 
-              placeholder="Ciudad..." 
+              :placeholder="$t('Ciudad')" 
             />
           </div>
 
@@ -48,26 +48,26 @@
           <button 
             @click="activeCategory = 'all'" 
             :class="['category-btn', { active: activeCategory === 'all' }]"
-            title="Todos los eventos"
+            :title="$t('Todos los eventos')"
           >
             <i class="bi bi-music-note-beamed"></i>
-            Todos
+            {{ $t('Todos') }}
           </button>
           <button 
             @click="activeCategory = 'concierto'" 
             :class="['category-btn', { active: activeCategory === 'concierto' }]"
-            title="Filtrar conciertos"
+            :title="$t('Filtrar conciertos')"
           >
             <i class="bi bi-mic"></i>
-            Conciertos
+            {{ $t('Conciertos') }}
           </button>
           <button 
             @click="activeCategory = 'festival'" 
             :class="['category-btn', { active: activeCategory === 'festival' }]"
-            title="Filtrar festivales"
+            :title="$t('Filtrar festivales')"
           >
             <i class="bi bi-people"></i>
-            Festivales
+            {{ $t('Festivales') }}
           </button>
         </div>
 
@@ -80,7 +80,7 @@
               v-model="searchQuery" 
               type="text" 
               class="search-input" 
-              placeholder="Busca evento..." 
+              :placeholder="$t('Busca evento')" 
             />
           </div>
         </div>
@@ -90,26 +90,26 @@
           <button 
             @click="activeCategory = 'all'" 
             :class="['category-btn', { active: activeCategory === 'all' }]"
-            title="Todos los eventos"
+            :title="$t('Todos los eventos')"
           >
             <i class="bi bi-music-note-beamed"></i>
-            Todos
+            {{ $t('Todos') }}
           </button>
           <button 
             @click="activeCategory = 'concierto'" 
             :class="['category-btn', { active: activeCategory === 'concierto' }]"
-            title="Filtrar conciertos"
+            :title="$t('Filtrar conciertos')"
           >
             <i class="bi bi-mic"></i>
-            Conciertos
+            {{ $t('Conciertos') }}
           </button>
           <button 
             @click="activeCategory = 'festival'" 
             :class="['category-btn', { active: activeCategory === 'festival' }]"
-            title="Filtrar festivales"
+            :title="$t('Filtrar festivales')"
           >
             <i class="bi bi-people"></i>
-            Festivales
+            {{ $t('Festivales') }}
           </button>
         </div>
 
@@ -161,21 +161,21 @@
       <div class="app-download-container">
         <div class="app-download-content">
           <div class="app-download-text">
-            <h2 class="app-download-title">¡Ten tus entradas siempre a mano!</h2>
-            <p class="app-download-subtitle">Descarga la app de GoLive y gestiona tus entradas desde cualquier lugar</p>
+            <h2 class="app-download-title">{{ $t('Ten tus entradas siempre a mano') }}</h2>
+            <p class="app-download-subtitle">{{ $t('Descarga la app de GoLive y gestiona tus entradas desde cualquier lugar') }}</p>
             
             <div class="app-download-features">
               <div class="feature-item">
                 <i class="bi bi-ticket-perforated"></i>
-                <span>Entradas siempre contigo</span>
+                <span>{{ $t('Entradas siempre contigo') }}</span>
               </div>
               <div class="feature-item">
                 <i class="bi bi-qr-code"></i>
-                <span>Código QR incluido</span>
+                <span>{{ $t('Código QR incluido') }}</span>
               </div>
               <div class="feature-item">
                 <i class="bi bi-bell"></i>
-                <span>Notificaciones de eventos</span>
+                <span>{{ $t('Notificaciones de eventos') }}</span>
               </div>
             </div>
 
