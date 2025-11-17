@@ -39,6 +39,18 @@
                   <i class="fas fa-cog me-1"></i>{{ $t('Oficina') }}
                 </NuxtLink>
               </li>
+
+              <li class="nav-item" v-if="userLogged">
+                <NuxtLink class="nav-link text-light" to="/misEntradas">
+                  <i class="fas fa-ticket-alt me-1"></i>{{ $t('Mis Entradas') }}
+                </NuxtLink>
+              </li>
+
+              <li class="nav-item" v-if="userLogged">
+                <NuxtLink class="nav-link text-light" to="/perfil">
+                  <i class="fas fa-user-circle me-1"></i>{{ $t('Perfil') }}
+                </NuxtLink>
+              </li>
             </ul>
           </div>
 
