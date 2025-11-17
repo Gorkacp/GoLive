@@ -4,13 +4,25 @@
       <h2>Registrarse</h2>
       <p class="subtitle">Crea tu cuenta para continuar</p>
 
-      <form @submit.prevent="handleRegister" class="login-form">
+      <!-- Paso 1: Información básica -->
+      <form v-if="step === 1" @submit.prevent="goToStep2" class="login-form">
+        <p class="step-indicator">Paso 1 de 2: Información básica</p>
+        
         <div class="input-group">
           <input 
             type="text" 
             v-model="form.name" 
-            placeholder="Nombre completo" 
+            placeholder="Nombre" 
             required 
+            :disabled="loading"
+          />
+        </div>
+
+        <div class="input-group">
+          <input 
+            type="text" 
+            v-model="form.lastName" 
+            placeholder="Apellidos" 
             :disabled="loading"
           />
         </div>
@@ -38,15 +50,67 @@
 
         <button 
           type="submit" 
-          :disabled="loading || !isFormValid"
+          :disabled="!isStep1Valid || loading"
           class="submit-btn"
           :class="{ 'loading': loading }"
         >
-          <span v-if="loading">
-            <i class="fas fa-spinner fa-spin"></i> Registrando...
-          </span>
-          <span v-else>Registrarse</span>
+          Siguiente <i class="fas fa-arrow-right"></i>
         </button>
+      </form>
+
+      <!-- Paso 2: Información personal adicional -->
+      <form v-if="step === 2" @submit.prevent="handleRegister" class="login-form">
+        <p class="step-indicator">Paso 2 de 2: Información personal (opcional)</p>
+        
+        <div class="input-group">
+          <input 
+            type="tel" 
+            v-model="form.phoneNumber" 
+            placeholder="Teléfono (ej: +34 600 000 000)" 
+            :disabled="loading"
+          />
+        </div>
+
+        <div class="input-group">
+          <input 
+            type="date" 
+            v-model="form.dateOfBirth" 
+            :disabled="loading"
+          />
+        </div>
+
+        <div class="input-group">
+          <input 
+            type="text" 
+            v-model="form.postalCode" 
+            placeholder="Código postal" 
+            :disabled="loading"
+          />
+        </div>
+
+        <div class="button-group">
+          <button 
+            type="button" 
+            @click="goBackToStep1"
+            :disabled="loading"
+            class="btn-secondary"
+          >
+            <i class="fas fa-arrow-left"></i> Atrás
+          </button>
+          <button 
+            type="submit" 
+            :disabled="loading"
+            class="submit-btn"
+            :class="{ 'loading': loading }"
+          >
+            <span v-if="loading">
+              <i class="fas fa-spinner fa-spin"></i> Registrando...
+            </span>
+            <span v-else>
+              <i class="fas fa-check"></i> Registrarse
+            </span>
+          </button>
+        </div>
       </form>
 
       <div v-if="errorMessage" class="alert alert-error">
@@ -59,9 +123,9 @@
         {{ successMessage }}
       </div>
 
-      <hr />
+      <hr v-if="step === 1" />
 
-      <p class="register-text">
+      <p v-if="step === 1" class="register-text">
         ¿Ya tienes cuenta? 
         <NuxtLink to="/login" class="auth-link">Inicia sesión</NuxtLink>
       </p>
@@ -81,18 +145,22 @@ import { ref, computed, reactive, watch } from 'vue'
 const config = useRuntimeConfig()
 const API_BASE = config.public.apiBase || 'https://backend-golive.onrender.com'
 
-// DEBUG: Verificar que la variable se carga correctamente
 console.log('🔧 Configuración API_BASE:', {
   fromConfig: config.public.apiBase,
   finalValue: API_BASE,
   isProduction: !process.dev
 })
 
-// Reactive form state
+// Form state
+const step = ref(1)
 const form = reactive({
   name: '',
+  lastName: '',
   email: '',
-  password: ''
+  password: '',
+  phoneNumber: '',
+  dateOfBirth: '',
+  postalCode: ''
 })
 
 // UI state
@@ -101,7 +169,7 @@ const successMessage = ref('')
 const loading = ref(false)
 
 // Computed properties
-const isFormValid = computed(() => {
+const isStep1Valid = computed(() => {
   return form.name.trim() && 
          form.email.trim() && 
          form.password.length >= 6 &&
@@ -114,35 +182,38 @@ const isValidEmail = (email) => {
 }
 
 // Methods
-const validateForm = () => {
+const goToStep2 = () => {
   errorMessage.value = ''
-
+  
   if (!form.name.trim()) {
     errorMessage.value = 'El nombre es obligatorio'
-    return false
+    return
   }
 
   if (!form.email.trim()) {
     errorMessage.value = 'El email es obligatorio'
-    return false
+    return
   }
 
   if (!isValidEmail(form.email)) {
     errorMessage.value = 'Por favor ingresa un email válido'
-    return false
+    return
   }
 
   if (form.password.length < 6) {
     errorMessage.value = 'La contraseña debe tener al menos 6 caracteres'
-    return false
+    return
   }
 
-  return true
+  step.value = 2
+}
+
+const goBackToStep1 = () => {
+  step.value = 1
+  errorMessage.value = ''
 }
 
 const handleRegister = async () => {
-  if (!validateForm()) return
-
   loading.value = true
   errorMessage.value = ''
   successMessage.value = ''
@@ -158,10 +229,14 @@ const handleRegister = async () => {
       },
       body: JSON.stringify({
         name: form.name.trim(),
+        lastName: form.lastName.trim(),
         email: form.email.trim().toLowerCase(),
-        password: form.password
+        password: form.password,
+        phoneNumber: form.phoneNumber.trim(),
+        dateOfBirth: form.dateOfBirth,
+        postalCode: form.postalCode.trim()
       }),
-      timeout: 15000 // 15 seconds timeout
+      timeout: 15000
     })
 
     console.log('✅ Respuesta del servidor recibida:', response)
@@ -291,8 +366,29 @@ h2 {
   line-height: 1.5;
 }
 
+.step-indicator {
+  font-size: 0.9rem;
+  color: rgba(255, 182, 161, 0.9);
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .login-form {
   margin-bottom: 1.5rem;
+  animation: slideInForm 0.3s ease-out;
+}
+
+@keyframes slideInForm {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .input-group {
@@ -343,6 +439,10 @@ h2 {
   margin-top: 0.5rem;
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .submit-btn:hover:not(:disabled) {
@@ -360,8 +460,37 @@ h2 {
   transform: none;
 }
 
-.submit-btn.loading {
-  pointer-events: none;
+.button-group {
+  display: flex;
+  gap: 15px;
+  margin-top: 1rem;
+}
+
+.btn-secondary {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 16px;
+  padding: 1rem 1.5rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .alert {
@@ -445,6 +574,17 @@ hr {
   }
 
   .input-group input {
+    padding: 0.875rem 1.25rem;
+  }
+
+  .button-group {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .btn-secondary,
+  .submit-btn {
+    font-size: 1rem;
     padding: 0.875rem 1.25rem;
   }
 }

@@ -30,8 +30,12 @@ public class AuthService {
 
         User user = new User();
         user.setName(request.getName());
+        user.setLastName(request.getLastName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPhoneNumber(request.getPhoneNumber());
+        user.setDateOfBirth(request.getDateOfBirth());
+        user.setPostalCode(request.getPostalCode());
         user.setRole("user");
 
         return userService.save(user);
@@ -116,5 +120,39 @@ public class AuthService {
         user.setResetPasswordToken(null);
         user.setResetPasswordExpiry(null);
         userService.save(user);
+    }
+
+    // Cambiar contraseña (usuario autenticado)
+    public void changePassword(String userId, String currentPassword, String newPassword) {
+        User user = userService.findUserById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // Validar contraseña actual
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("La contraseña actual es incorrecta");
+        }
+
+        // Validar que la nueva contraseña sea diferente
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new RuntimeException("Debe poner otra contraseña distinta a la anterior");
+        }
+
+        // Actualizar contraseña
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userService.save(user);
+    }
+
+    // Eliminar cuenta (valida contraseña)
+    public void deleteAccount(String userId, String password) {
+        User user = userService.findUserById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // Validar contraseña
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new RuntimeException("La contraseña es incorrecta. No se puede eliminar la cuenta.");
+        }
+
+        // Eliminar cuenta
+        userService.deleteUser(userId);
     }
 }

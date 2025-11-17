@@ -4,7 +4,8 @@ export default defineNuxtConfig({
   css: [
     'bootstrap/dist/css/bootstrap.min.css',
     'flag-icons/css/flag-icons.min.css',
-    'bootstrap-icons/font/bootstrap-icons.css'
+    'bootstrap-icons/font/bootstrap-icons.css',
+    '@fortawesome/fontawesome-free/css/all.min.css'
   ],
 
   plugins: [
@@ -54,5 +55,10 @@ export default defineNuxtConfig({
         changeOrigin: true
       }
     }
+  },
+
+  routeRules: {
+    '/perfil': { ssr: false },
+    '/perfil/**': { ssr: false }
   }
 })

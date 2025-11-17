@@ -11,11 +11,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import com.golive.backend.dto.ForgotPasswordRequest;
 
 import java.util.Map;
 import java.util.List;
 import java.util.Optional;
+import java.util.Base64;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -35,10 +37,16 @@ public class AuthController {
             String token = authService.login(new LoginRequest(request.getEmail(), request.getPassword()));
             
             AuthResponse response = new AuthResponse(
-                token, 
+                token,
+                user.getId(),
                 user.getEmail(), 
-                user.getName(), 
-                user.getRole()
+                user.getName(),
+                user.getLastName(),
+                user.getRole(),
+                user.getPhoneNumber(),
+                user.getDateOfBirth(),
+                user.getPostalCode(),
+                user.getProfilePhoto()
             );
             
             return ResponseEntity.ok(response);
@@ -55,10 +63,16 @@ public class AuthController {
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
             
             AuthResponse response = new AuthResponse(
-                token, 
-                user.getEmail(), 
-                user.getName(), 
-                user.getRole()
+                token,
+                user.getId(),
+                user.getEmail(),
+                user.getName(),
+                user.getLastName(),
+                user.getRole(),
+                user.getPhoneNumber(),
+                user.getDateOfBirth(),
+                user.getPostalCode(),
+                user.getProfilePhoto()
             );
             
             return ResponseEntity.ok(response);
@@ -146,6 +160,9 @@ public class AuthController {
             if (userDetails.getName() != null) {
                 user.setName(userDetails.getName());
             }
+            if (userDetails.getLastName() != null) {
+                user.setLastName(userDetails.getLastName());
+            }
             if (userDetails.getEmail() != null) {
                 // Verificar que el nuevo email no esté en uso
                 Optional<User> userWithEmail = userService.findByEmail(userDetails.getEmail());
@@ -153,6 +170,15 @@ public class AuthController {
                     return ResponseEntity.badRequest().body("El email ya está en uso");
                 }
                 user.setEmail(userDetails.getEmail());
+            }
+            if (userDetails.getPhoneNumber() != null) {
+                user.setPhoneNumber(userDetails.getPhoneNumber());
+            }
+            if (userDetails.getDateOfBirth() != null) {
+                user.setDateOfBirth(userDetails.getDateOfBirth());
+            }
+            if (userDetails.getPostalCode() != null) {
+                user.setPostalCode(userDetails.getPostalCode());
             }
             if (userDetails.getRole() != null && authService.isSuperUser(token)) {
                 // Solo SUPER_USER puede cambiar roles
@@ -163,6 +189,72 @@ public class AuthController {
             return ResponseEntity.ok(updatedUser);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Error al actualizar usuario: " + e.getMessage());
+        }
+    }
+
+    // POST: Subir foto de perfil
+    @PostMapping("/users/{id}/profile-photo")
+    public ResponseEntity<?> uploadProfilePhoto(@PathVariable String id,
+                                               @RequestParam("file") MultipartFile file,
+                                               @RequestHeader("Authorization") String token) {
+        try {
+            // Verificar permisos
+            if (!authService.hasUserAccess(token, id)) {
+                return ResponseEntity.status(403).body("Acceso denegado");
+            }
+
+            // Validar que sea una imagen
+            if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
+                return ResponseEntity.badRequest().body("El archivo debe ser una imagen");
+            }
+
+            // Validar tamaño máximo (5MB)
+            if (file.getSize() > 5 * 1024 * 1024) {
+                return ResponseEntity.badRequest().body("La imagen no puede pesar más de 5MB");
+            }
+
+            Optional<User> existingUser = userService.findUserById(id);
+            if (existingUser.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Convertir la imagen a Base64
+            String contentType = file.getContentType();
+            String base64Photo = "data:" + contentType + ";base64," + 
+                                Base64.getEncoder().encodeToString(file.getBytes());
+
+            User user = existingUser.get();
+            user.setProfilePhoto(base64Photo);
+            User updatedUser = userService.save(user);
+
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al subir la foto: " + e.getMessage());
+        }
+    }
+
+    // DELETE: Eliminar foto de perfil
+    @DeleteMapping("/users/{id}/profile-photo")
+    public ResponseEntity<?> deleteProfilePhoto(@PathVariable String id,
+                                               @RequestHeader("Authorization") String token) {
+        try {
+            // Verificar permisos
+            if (!authService.hasUserAccess(token, id)) {
+                return ResponseEntity.status(403).body("Acceso denegado");
+            }
+
+            Optional<User> existingUser = userService.findUserById(id);
+            if (existingUser.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            User user = existingUser.get();
+            user.setProfilePhoto(null);
+            User updatedUser = userService.save(user);
+
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al eliminar la foto: " + e.getMessage());
         }
     }
 
@@ -210,6 +302,35 @@ public class AuthController {
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Error al eliminar usuario: " + e.getMessage());
+        }
+    }
+
+    // DELETE: Eliminar cuenta con validación de contraseña
+    @DeleteMapping("/users/{id}/account")
+    public ResponseEntity<?> deleteAccount(@PathVariable String id,
+                                          @RequestBody Map<String, String> body,
+                                          @RequestHeader("Authorization") String token) {
+        try {
+            // Verificar permisos (solo el usuario puede eliminar su propia cuenta)
+            if (!authService.hasUserAccess(token, id)) {
+                return ResponseEntity.status(403).body("Acceso denegado");
+            }
+
+            // Validar campo de contraseña
+            if (!body.containsKey("password") || body.get("password") == null || body.get("password").trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("La contraseña es requerida");
+            }
+
+            String password = body.get("password").trim();
+
+            // Eliminar cuenta con validación de contraseña
+            authService.deleteAccount(id, password);
+
+            return ResponseEntity.ok("Cuenta eliminada exitosamente");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al eliminar la cuenta: " + e.getMessage());
         }
     }
 
@@ -297,6 +418,47 @@ public class AuthController {
             return ResponseEntity.ok("Contraseña restablecida correctamente");
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Error al restablecer la contraseña: " + e.getMessage());
+        }
+    }
+
+    // POST: Cambiar contraseña (usuario autenticado)
+    @PostMapping("/users/{id}/change-password")
+    public ResponseEntity<?> changePassword(@PathVariable String id,
+                                           @RequestBody Map<String, String> body,
+                                           @RequestHeader("Authorization") String token) {
+        try {
+            // Verificar permisos
+            if (!authService.hasUserAccess(token, id)) {
+                return ResponseEntity.status(403).body("Acceso denegado");
+            }
+
+            // Validar campos
+            if (!body.containsKey("currentPassword") || !body.containsKey("newPassword") || !body.containsKey("confirmPassword")) {
+                return ResponseEntity.badRequest().body("Faltan campos requeridos");
+            }
+
+            String currentPassword = body.get("currentPassword");
+            String newPassword = body.get("newPassword");
+            String confirmPassword = body.get("confirmPassword");
+
+            // Validar que las contraseñas coincidan
+            if (!newPassword.equals(confirmPassword)) {
+                return ResponseEntity.badRequest().body("Las contraseñas no coinciden");
+            }
+
+            // Validar longitud mínima
+            if (newPassword.length() < 6) {
+                return ResponseEntity.badRequest().body("La contraseña debe tener al menos 6 caracteres");
+            }
+
+            // Cambiar contraseña
+            authService.changePassword(id, currentPassword, newPassword);
+
+            return ResponseEntity.ok("Contraseña actualizada correctamente");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al cambiar la contraseña: " + e.getMessage());
         }
     }
 
