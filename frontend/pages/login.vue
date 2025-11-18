@@ -147,6 +147,7 @@ useHead({
 })
 
 import { ref, onMounted, watch, computed } from 'vue'
+const { setToken } = useAuth()
 
 const email = ref('')
 const password = ref('')
@@ -271,15 +272,20 @@ const loginUser = async () => {
         profilePhoto: response.profilePhoto
       }
       
-      localStorage.setItem('token', response.token)
-      localStorage.setItem('user', JSON.stringify(user))
+      // Guardar token usando el composable useAuth
+      setToken(response.token)
       
-      if (remember.value) {
-        localStorage.setItem('rememberedEmail', email.value)
-        localStorage.setItem('rememberedPassword', password.value)
-      } else {
-        localStorage.removeItem('rememberedEmail')
-        localStorage.removeItem('rememberedPassword')
+      // Guardar datos en sessionStorage para uso en cliente
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('user', JSON.stringify(user))
+        
+        if (remember.value) {
+          localStorage.setItem('rememberedEmail', email.value)
+          localStorage.setItem('rememberedPassword', password.value)
+        } else {
+          localStorage.removeItem('rememberedEmail')
+          localStorage.removeItem('rememberedPassword')
+        }
       }
       
       // Redirigir según el rol del usuario

@@ -155,4 +155,9 @@ public class AuthService {
         // Eliminar cuenta
         userService.deleteUser(userId);
     }
+
+    // Obtener email desde el token (para uso en controladores)
+    public String getEmailFromToken(String token) {
+        return jwtService.getEmailFromToken(token);
+    }
 }

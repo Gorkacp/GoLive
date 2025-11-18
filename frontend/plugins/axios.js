@@ -16,7 +16,10 @@ export default defineNuxtPlugin((nuxtApp) => {
   api.interceptors.request.use(
     (config) => {
       if (process.client) {
-        const token = localStorage.getItem('token')
+        // Obtener token de cookie
+        const authCookie = useCookie('auth_token')
+        const token = authCookie.value
+        
         if (token) {
           if (isTokenExpired(token)) {
             logoutUser()
@@ -69,8 +72,9 @@ export default defineNuxtPlugin((nuxtApp) => {
   // Función para cerrar sesión
   const logoutUser = () => {
     if (process.client) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      const authCookie = useCookie('auth_token')
+      authCookie.value = null
+      sessionStorage.removeItem('user')
       window.dispatchEvent(new Event('auth-change'))
     }
   }

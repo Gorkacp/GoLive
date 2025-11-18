@@ -196,6 +196,31 @@ public class AuthController {
         }
     }
 
+    // GET: Obtener usuario actual (autenticado)
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String token) {
+        try {
+            // Verificar que haya token
+            if (token == null || token.trim().isEmpty()) {
+                return ResponseEntity.status(401).body("Token requerido");
+            }
+
+            // Extraer email del token
+            String cleanToken = token.replace("Bearer ", "");
+            String userEmail = authService.getEmailFromToken(cleanToken);
+            
+            // Buscar usuario por email
+            Optional<User> user = userService.findByEmail(userEmail);
+            if (user.isPresent()) {
+                return ResponseEntity.ok(user.get());
+            } else {
+                return ResponseEntity.status(404).body("Usuario no encontrado");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body("Token inválido o expirado: " + e.getMessage());
+        }
+    }
+
     // GET: Obtener usuario por ID
     @GetMapping("/users/{id}")
     public ResponseEntity<?> getUserById(@PathVariable String id, @RequestHeader("Authorization") String token) {
