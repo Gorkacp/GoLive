@@ -198,15 +198,22 @@ public class AuthController {
 
     // GET: Obtener usuario actual (autenticado)
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String token) {
+    public ResponseEntity<?> getCurrentUser(@RequestHeader(value = "Authorization", required = false) String token) {
         try {
             // Verificar que haya token
             if (token == null || token.trim().isEmpty()) {
-                return ResponseEntity.status(401).body("Token requerido");
+                System.err.println("Token no proporcionado en header Authorization");
+                return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
             }
 
             // Extraer email del token
-            String cleanToken = token.replace("Bearer ", "");
+            String cleanToken = token.replace("Bearer ", "").trim();
+            
+            if (cleanToken.isEmpty()) {
+                System.err.println("Token vacío después de limpiar");
+                return ResponseEntity.status(401).body(Map.of("error", "Token inválido"));
+            }
+            
             String userEmail = authService.getEmailFromToken(cleanToken);
             
             // Buscar usuario por email
@@ -214,10 +221,13 @@ public class AuthController {
             if (user.isPresent()) {
                 return ResponseEntity.ok(user.get());
             } else {
-                return ResponseEntity.status(404).body("Usuario no encontrado");
+                System.err.println("Usuario no encontrado para email: " + userEmail);
+                return ResponseEntity.status(404).body(Map.of("error", "Usuario no encontrado"));
             }
         } catch (Exception e) {
-            return ResponseEntity.status(401).body("Token inválido o expirado: " + e.getMessage());
+            System.err.println("Error en getCurrentUser: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(401).body(Map.of("error", "Token inválido o expirado", "details", e.getMessage()));
         }
     }
 
