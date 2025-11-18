@@ -20,7 +20,11 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authz -> authz
-                .anyRequest().permitAll() // Permite todo sin autenticación
+                // Rutas públicas (sin autenticación)
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/test").permitAll()
+                .requestMatchers("/events", "/api/events").permitAll() // GET events sin autenticación
+                .requestMatchers("/api/events/search").permitAll()
+                .anyRequest().permitAll() // Permite todo lo demás sin autenticación
             );
 
         return http.build();

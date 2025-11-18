@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.golive.backend.dto.ForgotPasswordRequest;
 
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Base64;
@@ -81,7 +82,103 @@ public class AuthController {
         }
     }
 
-    // ========== ENDPOINTS DE GESTIÓN DE USUARIOS ==========
+    // Validar disponibilidad de email
+    @PostMapping("/check-email")
+    public ResponseEntity<?> checkEmail(@RequestBody Map<String, String> body) {
+        try {
+            String email = body.get("email");
+            
+            if (email == null || email.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("available", false, "message", "Email es requerido"));
+            }
+            
+            Optional<User> existingUser = userService.findByEmail(email.trim().toLowerCase());
+            
+            if (existingUser.isPresent()) {
+                return ResponseEntity.ok(Map.of(
+                    "available", false, 
+                    "message", "Este email ya está registrado"
+                ));
+            } else {
+                return ResponseEntity.ok(Map.of(
+                    "available", true,
+                    "message", "Email disponible"
+                ));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                "available", false,
+                "message", "Error al validar email: " + e.getMessage()
+            ));
+        }
+    }
+
+    // Validar contraseña contra políticas de seguridad
+    @PostMapping("/validate-password")
+    public ResponseEntity<?> validatePassword(@RequestBody Map<String, String> body) {
+        try {
+            String password = body.get("password");
+            
+            if (password == null || password.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "valid", false, 
+                    "message", "La contraseña es requerida"
+                ));
+            }
+            
+            StringBuilder violations = new StringBuilder();
+            boolean isValid = true;
+            
+            // Validaciones profesionales
+            if (password.length() < 8) {
+                violations.append("Mínimo 8 caracteres. ");
+                isValid = false;
+            }
+            if (password.length() > 128) {
+                violations.append("Máximo 128 caracteres. ");
+                isValid = false;
+            }
+            if (!password.matches(".*[A-Z].*")) {
+                violations.append("Debe contener al menos una mayúscula. ");
+                isValid = false;
+            }
+            if (!password.matches(".*[a-z].*")) {
+                violations.append("Debe contener al menos una minúscula. ");
+                isValid = false;
+            }
+            if (!password.matches(".*\\d.*")) {
+                violations.append("Debe contener al menos un número. ");
+                isValid = false;
+            }
+            if (!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\",./<>?].*")) {
+                violations.append("Debe contener al menos un carácter especial. ");
+                isValid = false;
+            }
+            if (password.contains(" ")) {
+                violations.append("No puede contener espacios en blanco. ");
+                isValid = false;
+            }
+            
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("valid", isValid);
+            response.put("message", isValid ? "Contraseña válida" : violations.toString().trim());
+            response.put("requirements", Map.of(
+                "length", password.length() >= 8 && password.length() <= 128,
+                "uppercase", password.matches(".*[A-Z].*"),
+                "lowercase", password.matches(".*[a-z].*"),
+                "numbers", password.matches(".*\\d.*"),
+                "specialCharacters", password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\",./<>?].*"),
+                "noSpaces", !password.contains(" ")
+            ));
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                "valid", false,
+                "message", "Error al validar contraseña: " + e.getMessage()
+            ));
+        }
+    }
 
     // GET: Obtener todos los usuarios (solo para SUPER_USER)
     @GetMapping("/users")
@@ -204,7 +301,8 @@ public class AuthController {
             }
 
             // Validar que sea una imagen
-            if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
+            String contentType = file.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
                 return ResponseEntity.badRequest().body("El archivo debe ser una imagen");
             }
 
@@ -219,7 +317,6 @@ public class AuthController {
             }
 
             // Convertir la imagen a Base64
-            String contentType = file.getContentType();
             String base64Photo = "data:" + contentType + ";base64," + 
                                 Base64.getEncoder().encodeToString(file.getBytes());
 
