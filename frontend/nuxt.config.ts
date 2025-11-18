@@ -54,25 +54,29 @@ export default defineNuxtConfig({
         target: 'http://localhost:8085',
         changeOrigin: true
       }
-    }
+    },
+    port: 3000,
+    host: 'localhost'
   },
 
   routeRules: {
-    '/perfil': { ssr: false },
-    '/perfil/**': { ssr: false }
+    // Desactivar cache para rutas autenticadas
+    '/perfil/**': { cache: false, swr: false }
   },
 
   vite: {
     server: {
-      cors: true,
+      middlewareMode: false,
       hmr: {
         protocol: 'ws',
         host: 'localhost',
-        port: 5173
+        port: 3000
       }
-    },
-    preview: {
-      port: 5173
     }
+  },
+
+  devServer: {
+    port: 3000,
+    host: 'localhost'
   }
 })

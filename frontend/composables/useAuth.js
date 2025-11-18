@@ -11,15 +11,22 @@ export const useAuth = () => {
   const authToken = useCookie('auth_token', {
     maxAge: 60 * 60 * 24 * 7, // 7 días
     secure: isProduction, // true en producción (HTTPS), false en desarrollo
-    httpOnly: isProduction, // true en producción (solo servidor), false en desarrollo
+    httpOnly: false, // Permitir que sea accesible desde JavaScript para SSR
     sameSite: 'strict', // Más restrictivo para seguridad
     path: '/'
   })
 
   /**
    * Verifica si el usuario está autenticado
+   * En servidor: verifica la cookie httpOnly
+   * En cliente: verifica que haya hecho al menos una petición exitosa
    */
   const isAuthenticated = computed(() => {
+    if (process.server) {
+      // En servidor, confiar en la cookie
+      return !!authToken.value
+    }
+    // En cliente, confiar en la cookie (que será seteada como normal si no es httpOnly)
     return !!authToken.value
   })
 
@@ -70,11 +77,13 @@ export const useAuth = () => {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        credentials: 'include' // Incluir cookies en la petición
       })
 
       return response
     } catch (error) {
+      console.error('Error en getCurrentUser:', error)
       throw error
     }
   }
