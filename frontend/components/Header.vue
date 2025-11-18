@@ -98,6 +98,7 @@ const route = useRoute()
 const userLogged = ref(false)
 const userRole = ref(null)
 const userData = ref(null)
+const { isAuthenticated, clearToken } = useAuth()
 
 const getRoleBadgeClass = (role) => {
   switch (role) {
@@ -109,10 +110,9 @@ const getRoleBadgeClass = (role) => {
 
 const loadUserFromStorage = () => {
   if (process.client) {
-    const userStr = localStorage.getItem('user')
-    const token = localStorage.getItem('token')
-
-    if (userStr && token) {
+    const userStr = sessionStorage.getItem('user')
+    
+    if (userStr) {
       try {
         userData.value = JSON.parse(userStr)
         userLogged.value = true
@@ -176,8 +176,8 @@ watch(() => route.path, () => {
 
 const logout = () => {
   if (process.client) {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    clearToken()
+    sessionStorage.removeItem('user')
     userLogged.value = false
     userRole.value = null
     userData.value = null

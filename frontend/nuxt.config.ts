@@ -60,5 +60,19 @@ export default defineNuxtConfig({
   routeRules: {
     '/perfil': { ssr: false },
     '/perfil/**': { ssr: false }
+  },
+
+  vite: {
+    server: {
+      cors: true,
+      hmr: {
+        protocol: 'ws',
+        host: 'localhost',
+        port: 5173
+      }
+    },
+    preview: {
+      port: 5173
+    }
   }
 })

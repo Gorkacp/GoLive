@@ -458,11 +458,13 @@ import { ref, onMounted } from 'vue'
 import Header from '~/components/Header.vue'
 import Footer from '~/components/Footer.vue'
 
-// API Configuration
-const config = useRuntimeConfig()
-const apiBase = config.public.apiBase
+// ========== MIDDLEWARE ==========
+definePageMeta({
+  middleware: 'auth'
+})
 
-// State Management
+// ========== COMPOSABLES ==========
+const { getCurrentUser, updateProfile: updateUserProfile, uploadProfilePhoto, changePassword: changeUserPassword, deleteAccount: deleteUserAccount } = useAuth()
 const activeTab = ref('datos')
 const editMode = ref(true)  // ✅ Cambiar a true para que siempre esté en modo edición
 const savingProfile = ref(false)
@@ -519,70 +521,47 @@ const tabs = [
 
 // ========== LIFECYCLE ==========
 onMounted(async () => {
-  console.log('✅ Componente montado')
   // Actualizar título de la pestaña
   document.title = 'Mi perfil | GoLive'
+  
   await loadUserData()
-  console.log('✅ EditMode initial:', editMode.value)
 })
 
 // ========== MÉTODOS DE CARGA ==========
 const loadUserData = async () => {
-  const userString = localStorage.getItem('user')
-  const token = localStorage.getItem('token')
-  
-  if (userString) {
-    const user = JSON.parse(userString)
+  try {
+    const user = await getCurrentUser()
     
-    // Si no tiene ID, obtenerlo del backend usando el token
-    if (!user.id && token && user.email) {
-      try {
-        console.log('🔍 Buscando datos del usuario en el backend...')
-        const response = await $fetch(`${apiBase}/api/auth/users`, {
-          method: 'GET',
-          headers: {
-            'Authorization': token,
-            'Content-Type': 'application/json'
-          }
-        })
-        
-        // Buscar el usuario en la lista por email
-        const currentUser = response.find(u => u.email === user.email)
-        if (currentUser) {
-          user.id = currentUser.id
-          user.lastName = currentUser.lastName || ''
-          user.phoneNumber = currentUser.phoneNumber || ''
-          user.dateOfBirth = currentUser.dateOfBirth || ''
-          user.postalCode = currentUser.postalCode || ''
-          user.profilePhoto = currentUser.profilePhoto || ''
-          // Actualizar localStorage
-          localStorage.setItem('user', JSON.stringify(user))
-        }
-      } catch (error) {
-        console.error('❌ Error al obtener datos del usuario:', error)
+    if (user) {
+      userData.value = {
+        name: user.name || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phoneNumber: user.phoneNumber || '',
+        dateOfBirth: user.dateOfBirth || '',
+        postalCode: user.postalCode || '',
+        profilePhoto: user.profilePhoto || '',
+        role: user.role || 'user',
+        id: user.id || ''
       }
+      formData.value = {
+        name: userData.value.name,
+        lastName: userData.value.lastName,
+        email: userData.value.email,
+        phoneNumber: userData.value.phoneNumber,
+        dateOfBirth: userData.value.dateOfBirth,
+        postalCode: userData.value.postalCode
+      }
+    } else {
+      console.warn('⚠️ No se encontraron datos del usuario')
     }
-    
-    userData.value = {
-      name: user.name || '',
-      lastName: user.lastName || '',
-      email: user.email || '',
-      phoneNumber: user.phoneNumber || '',
-      dateOfBirth: user.dateOfBirth || '',
-      postalCode: user.postalCode || '',
-      profilePhoto: user.profilePhoto || '',
-      role: user.role || 'user',
-      id: user.id || ''
+  } catch (error) {
+    console.error('❌ Error al cargar datos del usuario:', error)
+    profileMessage.value = {
+      type: 'alert-error',
+      text: 'Error al cargar los datos del perfil',
+      icon: 'fas fa-exclamation-circle'
     }
-    formData.value = {
-      name: userData.value.name,
-      lastName: userData.value.lastName,
-      email: userData.value.email,
-      phoneNumber: userData.value.phoneNumber,
-      dateOfBirth: userData.value.dateOfBirth,
-      postalCode: userData.value.postalCode
-    }
-    console.log('✅ Datos cargados:', userData.value)
   }
 }
 
@@ -604,24 +583,7 @@ const updateProfile = async () => {
 
   savingProfile.value = true
   try {
-    const token = localStorage.getItem('token')
-    const userId = userData.value.id
-
-    const response = await $fetch(`${apiBase}/api/auth/users/${userId}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': token,
-        'Content-Type': 'application/json'
-      },
-      body: {
-        name: formData.value.name,
-        lastName: formData.value.lastName,
-        email: formData.value.email,
-        phoneNumber: formData.value.phoneNumber,
-        dateOfBirth: formData.value.dateOfBirth,
-        postalCode: formData.value.postalCode
-      }
-    })
+    const response = await updateUserProfile(userData.value.id, formData.value)
 
     // Actualizar datos locales
     userData.value.name = response.name
@@ -636,16 +598,6 @@ const updateProfile = async () => {
     formData.value.phoneNumber = response.phoneNumber
     formData.value.dateOfBirth = response.dateOfBirth
     formData.value.postalCode = response.postalCode
-
-    // Actualizar localStorage
-    const userLocal = JSON.parse(localStorage.getItem('user'))
-    userLocal.name = response.name
-    userLocal.lastName = response.lastName
-    userLocal.email = response.email
-    userLocal.phoneNumber = response.phoneNumber
-    userLocal.dateOfBirth = response.dateOfBirth
-    userLocal.postalCode = response.postalCode
-    localStorage.setItem('user', JSON.stringify(userLocal))
 
     profileMessage.value = {
       type: 'alert-success',
@@ -688,26 +640,6 @@ const handlePhotoChange = async (event) => {
   const file = event.target.files?.[0]
   if (!file) return
 
-  // Validar tipo
-  if (!file.type.startsWith('image/')) {
-    profileMessage.value = {
-      type: 'alert-error',
-      text: 'Por favor selecciona una imagen válida',
-      icon: 'fas fa-exclamation-circle'
-    }
-    return
-  }
-
-  // Validar tamaño (5MB máximo)
-  if (file.size > 5 * 1024 * 1024) {
-    profileMessage.value = {
-      type: 'alert-error',
-      text: 'La imagen no puede pesar más de 5MB',
-      icon: 'fas fa-exclamation-circle'
-    }
-    return
-  }
-
   uploadingPhoto.value = true
 
   try {
@@ -718,26 +650,10 @@ const handlePhotoChange = async (event) => {
     }
     reader.readAsDataURL(file)
 
-    const token = localStorage.getItem('token')
-    const userId = userData.value.id
+    const response = await uploadProfilePhoto(userData.value.id, file)
 
-    // Crear FormData para enviar el archivo
-    const formDataToSend = new FormData()
-    formDataToSend.append('file', file)
-
-    const response = await $fetch(`${apiBase}/api/auth/users/${userId}/profile-photo`, {
-      method: 'POST',
-      headers: {
-        'Authorization': token
-      },
-      body: formDataToSend
-    })
-
-    // Actualizar foto en userData y localStorage
+    // Actualizar foto en userData
     userData.value.profilePhoto = response.profilePhoto
-    const userLocal = JSON.parse(localStorage.getItem('user'))
-    userLocal.profilePhoto = response.profilePhoto
-    localStorage.setItem('user', JSON.stringify(userLocal))
 
     profileMessage.value = {
       type: 'alert-success',
@@ -749,7 +665,7 @@ const handlePhotoChange = async (event) => {
   } catch (error) {
     profileMessage.value = {
       type: 'alert-error',
-      text: error.data?.message || 'Error al subir la foto',
+      text: error.message || error.data?.message || 'Error al subir la foto',
       icon: 'fas fa-exclamation-circle'
     }
   } finally {
@@ -844,21 +760,7 @@ const changePassword = async () => {
 
   changingPassword.value = true
   try {
-    const token = localStorage.getItem('token')
-    const userId = userData.value.id
-
-    await $fetch(`${apiBase}/api/auth/users/${userId}/change-password`, {
-      method: 'POST',
-      headers: {
-        'Authorization': token,
-        'Content-Type': 'application/json'
-      },
-      body: {
-        currentPassword: passwordForm.value.currentPassword,
-        newPassword: passwordForm.value.newPassword,
-        confirmPassword: passwordForm.value.confirmPassword
-      }
-    })
+    await changeUserPassword(userData.value.id, passwordForm.value)
 
     passwordMessage.value = {
       type: 'alert-success',
@@ -893,8 +795,6 @@ const changePassword = async () => {
     } else {
       errorMsg = 'Error al cambiar la contraseña'
     }
-    
-    console.log('Mensaje de error extraído:', errorMsg)
     
     // Mapear errores específicos del backend
     let displayMessage = errorMsg
@@ -933,25 +833,11 @@ const deleteAccount = async () => {
 
   deletingAccount.value = true
   try {
-    const token = localStorage.getItem('token')
-    const userId = userData.value.id
+    await deleteUserAccount(userData.value.id, deletePassword.value.trim())
 
-    const response = await $fetch(`${apiBase}/api/auth/users/${userId}/account`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': token,
-        'Content-Type': 'application/json'
-      },
-      body: {
-        password: deletePassword.value.trim()
-      }
-    })
-
-    // Limpiar datos locales
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    localStorage.removeItem('rememberedEmail')
-    localStorage.removeItem('rememberedPassword')
+    // Limpiar cookies
+    const authCookie = useCookie('auth_token')
+    authCookie.value = null
 
     // Redirigir al login
     await navigateTo('/login')

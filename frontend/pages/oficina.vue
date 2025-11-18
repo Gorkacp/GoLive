@@ -170,10 +170,12 @@ const statsArray = computed(() => [
 ])
 
 // CRUD & Modals
+const { getToken } = useAuth()
+
 const loadUsers = async () => {
   loading.value = true; error.value = ''
   try {
-    const token = localStorage.getItem('token')
+    const token = getToken()
     if (!token) throw new Error('No hay token de autenticación')
     users.value = await $fetch(`${API_BASE}/api/auth/users`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
   } catch (err) { error.value = err.message } finally { loading.value = false }

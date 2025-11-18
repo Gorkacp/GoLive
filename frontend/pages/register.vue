@@ -419,9 +419,14 @@ const handleRegister = async () => {
         profilePhoto: response.profilePhoto
       }
       
-      // Store authentication data
-      localStorage.setItem('token', response.token)
-      localStorage.setItem('user', JSON.stringify(user))
+      // Guardar token usando composable
+      const { setToken } = useAuth()
+      setToken(response.token)
+      
+      // Guardar datos en sessionStorage para uso en cliente
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('user', JSON.stringify(user))
+      }
       
       successMessage.value = 'Cuenta creada exitosamente. Redirigiendo...'
       
