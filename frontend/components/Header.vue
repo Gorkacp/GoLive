@@ -59,11 +59,7 @@
             <template v-if="userLogged">
               <div class="text-light mb-3">
                 <strong>Hola, {{ userData?.name }}</strong><br>
-                <small>{{ userData?.email }}</small><br>
-
-                <small class="badge" :class="getRoleBadgeClass(userRole)">
-                  {{ userRole }}
-                </small>
+                <small>{{ userData?.email }}</small>
               </div>
               <button @click="logout" class="btn btn-danger w-100">
                 <i class="fas fa-sign-out-alt me-1"></i>{{ $t('Cerrar sesión') }}
@@ -71,10 +67,10 @@
             </template>
 
             <template v-else>
-              <NuxtLink to="/login" class="btn btn-primary w-100 mb-2">
+              <NuxtLink to="/login" class="btn btn-gradient w-100 mb-2">
                 <i class="fas fa-sign-in-alt me-1"></i>{{ $t('Iniciar sesión') }}
               </NuxtLink>
-              <NuxtLink to="/register" class="btn btn-outline-primary w-100">
+              <NuxtLink to="/register" class="btn btn-gradient w-100">
                 <i class="fas fa-user-plus me-1"></i>{{ $t('Registrarse') }}
               </NuxtLink>
             </template>
@@ -303,5 +299,57 @@ const setLanguage = (lang) => {
 .nav-link i {
   width: 16px;
   text-align: center;
+}
+
+/* ============ BOTONES GRADIENTE ============ */
+.btn-gradient {
+  background: linear-gradient(135deg, #8b0035 0%, #a03a14 100%);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+}
+
+.btn-gradient:hover {
+  background: linear-gradient(135deg, #7a0030, #8f3410);
+  color: #fff;
+  text-decoration: none;
+}
+
+.btn-gradient:active {
+  transform: scale(0.98);
+}
+
+.btn-gradient-outline {
+  background: transparent;
+  border: 2px solid;
+  border-image: linear-gradient(135deg, #8b0035 0%, #a03a14 100%) 1;
+  color: #fff;
+  font-weight: 600;
+  padding: 0.55rem 1.5rem;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-gradient-outline:hover {
+  background: linear-gradient(135deg, rgba(139, 0, 53, 0.1) 0%, rgba(160, 58, 20, 0.1) 100%);
+  border-image: linear-gradient(135deg, #a03a14 0%, #8b0035 100%) 1;
+  color: #fff;
+  text-decoration: none;
+}
+
+.btn-gradient-outline:active {
+  transform: scale(0.98);
 }
 </style>

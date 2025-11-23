@@ -114,13 +114,13 @@
                 </div>
               </div>
 
-              <div v-if="filteredUsers.length === 0" class="empty-state-users">
+              <div v-if="filteredUsers.length === 0" class="empty-state-users d-lg-none">
                 <i class="fas fa-users"></i>
                 <p><strong>No se encontraron usuarios</strong></p>
                 <small>Intenta cambiar tus criterios de búsqueda</small>
               </div>
 
-              <div class="users-table-footer">
+              <div class="users-table-footer d-lg-none">
                 <div class="results-count">
                   <i class="fas fa-check-circle me-2"></i>
                   <span>Mostrando <strong>{{ filteredUsers.length }}</strong> de <strong>{{ users.length }}</strong> usuarios</span>
@@ -133,80 +133,78 @@
             </div>
           </div>
 
-          <div class="card-body p-0">
-            <div v-if="loading" class="loading-users">
-              <div class="spinner-border text-primary" role="status"></div>
-              <p class="text-muted mt-3">Cargando usuarios...</p>
+          <div v-if="loading" class="loading-users">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="text-muted mt-3">Cargando usuarios...</p>
+          </div>
+
+          <div v-else-if="error" class="alert alert-danger m-4 alert-users">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            {{ error }}
+          </div>
+
+          <div v-else class="card-body p-0">
+            <!-- Vista de escritorio (tabla) -->
+            <div class="table-responsive-users d-none d-lg-block">
+              <table class="table-users-clean">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Rol</th>
+                    <th>Compras</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="user in filteredUsers" :key="user._id">
+                    <td class="cell-nombre">
+                      <div class="user-cell-content">
+                        <div v-if="user.profilePhoto" class="avatar-image">
+                          <img :src="user.profilePhoto" :alt="user.name" class="avatar-img">
+                        </div>
+                        <div v-else class="avatar-circle">{{ user.name?.charAt(0)?.toUpperCase() || 'U' }}</div>
+                        <div class="user-info">
+                          <div class="user-name">{{ user.name }}</div>
+                          <small class="user-email">{{ user.email }}</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="cell-rol"><span class="badge" :class="getRoleBadgeClass(user.role)">{{ formatRole(user.role) }}</span></td>
+                    <td class="cell-compras"><span class="badge bg-secondary">{{ user.purchases?.length || 0 }}</span></td>
+                    <td class="cell-estado"><span class="badge bg-success">Activo</span></td>
+                    <td class="cell-acciones">
+                      <div class="actions-container">
+                        <button class="btn btn-sm btn-outline-primary" @click="editUser(user)">
+                          <i class="fas fa-edit me-1"></i>Editar
+                        </button>
+                        <button class="btn btn-sm btn-outline-info" @click="changeUserRole(user)">
+                          <i class="fas fa-user-cog me-1"></i>Rol
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" @click="confirmDeleteUser(user)">
+                          <i class="fas fa-trash me-1"></i>Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            <div v-else-if="error" class="alert alert-danger m-4 alert-users">
-              <i class="fas fa-exclamation-triangle me-2"></i>
-              {{ error }}
+            <div v-if="filteredUsers.length === 0" class="empty-state-users d-none d-lg-block">
+              <i class="fas fa-users"></i>
+              <p><strong>No se encontraron usuarios</strong></p>
+              <small>Intenta cambiar tus criterios de búsqueda</small>
             </div>
 
-            <div v-else>
-              <!-- Vista de escritorio (tabla) -->
-              <div class="table-responsive-users d-none d-lg-block">
-                <table class="table-users-clean">
-                  <thead>
-                    <tr>
-                      <th>Nombre</th>
-                      <th>Rol</th>
-                      <th>Compras</th>
-                      <th>Estado</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="user in filteredUsers" :key="user._id">
-                      <td class="cell-nombre">
-                        <div class="user-cell-content">
-                          <div v-if="user.profilePhoto" class="avatar-image">
-                            <img :src="user.profilePhoto" :alt="user.name" class="avatar-img">
-                          </div>
-                          <div v-else class="avatar-circle">{{ user.name?.charAt(0)?.toUpperCase() || 'U' }}</div>
-                          <div class="user-info">
-                            <div class="user-name">{{ user.name }}</div>
-                            <small class="user-email">{{ user.email }}</small>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="cell-rol"><span class="badge" :class="getRoleBadgeClass(user.role)">{{ formatRole(user.role) }}</span></td>
-                      <td class="cell-compras"><span class="badge bg-secondary">{{ user.purchases?.length || 0 }}</span></td>
-                      <td class="cell-estado"><span class="badge bg-success">Activo</span></td>
-                      <td class="cell-acciones">
-                        <div class="actions-container">
-                          <button class="btn btn-sm btn-outline-primary" @click="editUser(user)">
-                            <i class="fas fa-edit me-1"></i>Editar
-                          </button>
-                          <button class="btn btn-sm btn-outline-info" @click="changeUserRole(user)">
-                            <i class="fas fa-user-cog me-1"></i>Rol
-                          </button>
-                          <button class="btn btn-sm btn-outline-danger" @click="confirmDeleteUser(user)">
-                            <i class="fas fa-trash me-1"></i>Eliminar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+            <div class="users-table-footer users-table-footer-desktop d-none d-lg-block">
+              <div class="results-count">
+                <i class="fas fa-check-circle me-2"></i>
+                <span>Mostrando <strong>{{ filteredUsers.length }}</strong> de <strong>{{ users.length }}</strong> usuarios</span>
               </div>
-
-              <div v-if="filteredUsers.length === 0" class="empty-state-users">
-                <i class="fas fa-users"></i>
-                <p><strong>No se encontraron usuarios</strong></p>
-                <small>Intenta cambiar tus criterios de búsqueda</small>
-              </div>
-
-              <div class="users-table-footer">
-                <div class="results-count">
-                  <i class="fas fa-check-circle me-2"></i>
-                  <span>Mostrando <strong>{{ filteredUsers.length }}</strong> de <strong>{{ users.length }}</strong> usuarios</span>
-                </div>
-                <div class="footer-info">
-                  <i class="fas fa-shield-alt me-1"></i>
-                  <span>Panel de administración seguro</span>
-                </div>
+              <div class="footer-info">
+                <i class="fas fa-shield-alt me-1"></i>
+                <span>Panel de administración seguro</span>
               </div>
             </div>
           </div>
@@ -261,6 +259,11 @@ const statsArray = computed(() => [
 
 const { getToken } = useAuth()
 
+// Cache de modales
+let userFormModal = null
+let roleChangeModal = null
+let deleteConfirmModal = null
+
 // Cargar usuarios
 const loadUsers = async () => {
   loading.value = true
@@ -279,35 +282,37 @@ const loadUsers = async () => {
   }
 }
 
+// Inicializar modales (solo una vez)
+const initializeModals = () => {
+  if (process.client) {
+    userFormModal = new bootstrap.Modal(document.getElementById('userFormModal'), { backdrop: 'static' })
+    roleChangeModal = new bootstrap.Modal(document.getElementById('roleChangeModal'), { backdrop: 'static' })
+    deleteConfirmModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'), { backdrop: 'static' })
+  }
+}
+
 // Abrir modal de agregar usuario
 const openAddUserModal = () => {
   editingUser.value = null
-  const modalElement = document.getElementById('userFormModal')
-  new bootstrap.Modal(modalElement).show()
+  requestAnimationFrame(() => userFormModal?.show())
 }
 
 // Abrir modal de editar usuario
 const editUser = (user) => {
   editingUser.value = user
-  const modalElement = document.getElementById('userFormModal')
-  new bootstrap.Modal(modalElement).show()
+  requestAnimationFrame(() => userFormModal?.show())
 }
 
 // Abrir modal de cambiar rol
 const changeUserRole = (user) => {
-  console.log('Usuario seleccionado:', user)
-  console.log('Usuario ID:', user?._id)
   userToChangeRole.value = user
-  const modalElement = document.getElementById('roleChangeModal')
-  const modal = new bootstrap.Modal(modalElement)
-  modal.show()
+  requestAnimationFrame(() => roleChangeModal?.show())
 }
 
 // Abrir modal de confirmación de eliminación
 const confirmDeleteUser = (user) => {
   userToDelete.value = user
-  const modalElement = document.getElementById('deleteConfirmModal')
-  new bootstrap.Modal(modalElement).show()
+  requestAnimationFrame(() => deleteConfirmModal?.show())
 }
 
 // Manejar guardado de usuario
@@ -340,13 +345,39 @@ const handleUserDeleted = async () => {
   await loadUsers()
 }
 
-const getRoleBadgeClass = role => role === 'super_user' ? 'bg-warning text-dark' : role === 'admin' ? 'bg-info' : 'bg-success'
-const formatRole = role => role === 'super_user' ? 'Super Usuario' : role === 'admin' ? 'Administrador' : 'Usuario'
+// Funciones optimizadas con memoización
+const getRoleBadgeClass = (role) => {
+  const roleMap = {
+    'super_user': 'bg-warning text-dark',
+    'admin': 'bg-info',
+    'user': 'bg-success'
+  }
+  return roleMap[role] || 'bg-success'
+}
 
-onMounted(() => loadUsers())
+const formatRole = (role) => {
+  const roleMap = {
+    'super_user': 'Super Usuario',
+    'admin': 'Administrador',
+    'user': 'Usuario'
+  }
+  return roleMap[role] || 'Usuario'
+}
+
+onMounted(() => {
+  if (process.client) {
+    initializeModals()
+  }
+  loadUsers()
+})
 
 onUnmounted(() => {
   clearTimeout(successTimeout.value)
+  if (process.client) {
+    userFormModal?.dispose()
+    roleChangeModal?.dispose()
+    deleteConfirmModal?.dispose()
+  }
 })
 </script>
 
@@ -362,6 +393,7 @@ onUnmounted(() => {
   margin-top: 75px !important;
   position: relative;
   overflow: hidden;
+  contain: layout style paint;
 }
 
 .oficina-container::before {
@@ -399,32 +431,16 @@ onUnmounted(() => {
   border: 1px solid rgba(255, 0, 87, 0.15);
   border-radius: 14px;
   color: #fff;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: border-color 0.2s linear;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   overflow: hidden;
   position: relative;
-}
-
-.card-custom::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(255, 0, 87, 0), rgba(255, 0, 87, 0.3), rgba(255, 0, 87, 0));
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  will-change: border-color;
 }
 
 .card-custom:hover {
   border-color: rgba(255, 0, 87, 0.4);
   box-shadow: 0 12px 40px rgba(255, 0, 87, 0.2);
-  transform: translateY(-4px);
-}
-
-.card-custom:hover::before {
-  opacity: 1;
 }
 
 .card-custom .card-header {
@@ -457,31 +473,15 @@ onUnmounted(() => {
   border: 1px solid rgba(255, 0, 87, 0.15);
   border-radius: 14px;
   padding: 1.5rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: border-color 0.2s linear;
   position: relative;
   overflow: hidden;
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(255, 0, 87, 0), rgba(255, 0, 87, 0.3), rgba(255, 0, 87, 0));
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  will-change: border-color;
 }
 
 .stat-card:hover {
   border-color: rgba(255, 0, 87, 0.4);
   box-shadow: 0 12px 40px rgba(255, 0, 87, 0.2);
-  transform: translateY(-4px);
-}
-
-.stat-card:hover::before {
-  opacity: 1;
 }
 
 .stat-card-content {
@@ -543,11 +543,6 @@ onUnmounted(() => {
   border-bottom: 1px solid rgba(255, 0, 87, 0.08);
   padding: 1rem 0.75rem;
   vertical-align: middle;
-  transition: all 0.2s ease;
-}
-
-.table-dark tbody tr {
-  transition: all 0.2s ease;
 }
 
 .table-dark tbody tr:hover {
@@ -566,9 +561,10 @@ onUnmounted(() => {
   color: #fff;
   border-radius: 10px;
   padding: 0.65rem 1rem;
-  transition: all 0.3s ease;
+  transition: border-color 0.15s linear;
   font-family: 'Poppins', sans-serif;
   font-weight: 500;
+  will-change: border-color;
 }
 
 .search-input::placeholder {
@@ -579,7 +575,7 @@ onUnmounted(() => {
 .search-input:focus {
   background: linear-gradient(135deg, #1f1f1f 0%, #1a1a1a 100%);
   border-color: rgba(255, 0, 87, 0.6);
-  box-shadow: 0 0 0 4px rgba(255, 0, 87, 0.12);
+  box-shadow: 0 0 0 3px rgba(255, 0, 87, 0.1);
   color: #fff;
   outline: none;
 }
@@ -793,14 +789,14 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   font-size: 0.85rem;
-  transition: all 0.2s ease;
   border-radius: 4px;
   min-width: 30px;
   height: 30px;
+  will-change: transform;
 }
 
 .btn-action-icon:active {
-  transform: scale(0.9);
+  transform: scale(0.95);
 }
 
 .btn-edit {
@@ -1451,12 +1447,24 @@ onUnmounted(() => {
   border-radius: 0 0 14px 14px;
 }
 
+.users-table-footer-desktop {
+  flex-direction: row !important;
+  gap: 20px !important;
+  text-align: left !important;
+  justify-content: space-between !important;
+}
+
+.users-table-footer-desktop .results-count {
+  flex: 0 !important;
+}
+
 .results-count {
   color: #e5e7eb;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex: 1;
+  will-change: contents;
 }
 
 .results-count i {
@@ -1466,15 +1474,14 @@ onUnmounted(() => {
 }
 
 .results-count span {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: inline;
 }
 
 .results-count strong {
   color: #ff0057;
   font-weight: 800;
   display: inline;
+  margin: 0 4px;
 }
 
 .footer-info {
