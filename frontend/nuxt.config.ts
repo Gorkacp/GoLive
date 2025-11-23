@@ -54,9 +54,7 @@ export default defineNuxtConfig({
         target: 'http://localhost:8085',
         changeOrigin: true
       }
-    },
-    port: 3000,
-    host: 'localhost'
+    }
   },
 
   routeRules: {

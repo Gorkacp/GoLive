@@ -4,6 +4,7 @@ package com.golive.backend.controller;
 import com.golive.backend.dto.AuthResponse;
 import com.golive.backend.dto.LoginRequest;
 import com.golive.backend.dto.RegisterRequest;
+import com.golive.backend.dto.RoleChangeRequest;
 import com.golive.backend.model.User;
 import com.golive.backend.services.AuthService;
 import com.golive.backend.services.UserService;
@@ -393,7 +394,7 @@ public class AuthController {
     // PATCH: Actualizar solo el rol del usuario (solo SUPER_USER)
     @PatchMapping("/users/{id}/role")
     public ResponseEntity<?> updateUserRole(@PathVariable String id, 
-                                           @RequestBody String newRole,
+                                           @RequestBody RoleChangeRequest roleChangeRequest,
                                            @RequestHeader("Authorization") String token) {
         try {
             if (!authService.isSuperUser(token)) {
@@ -406,7 +407,7 @@ public class AuthController {
             }
 
             User user = existingUser.get();
-            user.setRole(newRole);
+            user.setRole(roleChangeRequest.getRole());
 
             User updatedUser = userService.save(user);
             return ResponseEntity.ok(updatedUser);
