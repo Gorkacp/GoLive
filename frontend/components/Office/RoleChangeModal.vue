@@ -1,7 +1,8 @@
 <template>
-  <div class="modal fade" id="roleChangeModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content modal-custom">
+  <Teleport to="body">
+    <div class="modal fade" id="roleChangeModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-custom">
         <!-- Header -->
         <div class="modal-header modal-header-custom">
           <h5 class="modal-title">
@@ -133,8 +134,9 @@
           </button>
         </div>
       </div>
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup>
@@ -156,8 +158,11 @@ const isLoading = ref(false)
 const submitError = ref('')
 const submitSuccess = ref('')
 const currentUser = ref(null)
+let modalInstance = null
+let eventListenersAdded = false
 
-const availableRoles = [
+// Roles como const - Object.freeze para inmutabilidad total
+const availableRoles = Object.freeze([
   {
     value: 'user',
     name: 'Usuario',
@@ -176,41 +181,40 @@ const availableRoles = [
     icon: 'fas fa-crown',
     description: 'Acceso total. Control completo del sistema y todos los usuarios.'
   }
-]
+])
 
-watch(() => props.user, (newUser) => {
-  console.log('RoleChangeModal watcher - newUser:', newUser)
-  if (newUser) {
-    console.log('Asignando usuario a currentUser')
-    currentUser.value = newUser
-    selectedRole.value = newUser.role || 'user'
-    submitError.value = ''
-    submitSuccess.value = ''
-  }
-}, { immediate: true })
+// Watcher optimizado - flush post para mejor rendimiento
+watch(
+  () => props.user,
+  (newUser) => {
+    if (newUser) {
+      currentUser.value = newUser
+      selectedRole.value = newUser.role || 'user'
+      submitError.value = ''
+      submitSuccess.value = ''
+    }
+  },
+  { immediate: true, flush: 'post' }
+)
 
-const getCurrentRoleBadgeClass = (role) => {
-  if (role === 'super_user') return 'bg-warning text-dark'
-  if (role === 'admin') return 'bg-info'
-  return 'bg-success'
-}
+// Cache para clases de badge - Object.freeze para inmutabilidad
+const BADGE_CLASSES = Object.freeze({
+  'super_user': 'bg-warning text-dark',
+  'admin': 'bg-info',
+  'user': 'bg-success'
+})
 
-const getNewRoleBadgeClass = () => {
-  if (selectedRole.value === 'super_user') return 'bg-warning text-dark'
-  if (selectedRole.value === 'admin') return 'bg-info'
-  return 'bg-success'
-}
+const ROLE_NAMES = Object.freeze({
+  'super_user': 'Super Usuario',
+  'admin': 'Administrador',
+  'user': 'Usuario'
+})
 
-const formatRole = (role) => {
-  if (role === 'super_user') return 'Super Usuario'
-  if (role === 'admin') return 'Administrador'
-  return 'Usuario'
-}
+const getCurrentRoleBadgeClass = (role) => BADGE_CLASSES[role] || BADGE_CLASSES['user']
+const getNewRoleBadgeClass = () => BADGE_CLASSES[selectedRole.value] || BADGE_CLASSES['user']
+const formatRole = (role) => ROLE_NAMES[role] || ROLE_NAMES['user']
 
 const handleSubmit = async () => {
-  console.log('handleSubmit - currentUser:', currentUser.value)
-  console.log('handleSubmit - selectedRole:', selectedRole.value)
-  
   if (!currentUser.value) {
     submitError.value = 'No hay usuario seleccionado'
     return
@@ -230,11 +234,7 @@ const handleSubmit = async () => {
     if (!token) throw new Error('No hay token de autenticación')
 
     const userId = currentUser.value._id || currentUser.value.id
-    console.log('Cambiando rol para usuario:', userId, 'Nuevo rol:', selectedRole.value)
-    
-    if (!userId) {
-      throw new Error('No se pudo obtener el ID del usuario')
-    }
+    if (!userId) throw new Error('No se pudo obtener el ID del usuario')
 
     await $fetch(`${API_BASE}/api/auth/users/${userId}/role`, {
       method: 'PATCH',
@@ -242,117 +242,196 @@ const handleSubmit = async () => {
       body: { role: selectedRole.value }
     })
 
+    // Actualizar el rol en currentUser para que se refleje en el UI
+    currentUser.value.role = selectedRole.value
+    
     submitSuccess.value = `Rol actualizado a ${formatRole(selectedRole.value)}`
-    setTimeout(() => {
-      emit('save')
-      closeModal()
-    }, 1500)
+    
+    // Emitir evento de guardado y cerrar modal inmediatamente
+    emit('save')
+    
+    // Cerrar modal después de mostrar el mensaje de éxito
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        closeModal()
+      }, 600)
+    })
   } catch (error) {
-    console.error('Error completo:', error)
-    console.error('Error data:', error.data)
-    console.error('Error message:', error.message)
-    
-    let errorMsg = 'Error al cambiar el rol'
-    if (error.data?.message) {
-      errorMsg = error.data.message
-    } else if (error.message) {
-      errorMsg = error.message
-    } else if (typeof error === 'string') {
-      errorMsg = error
-    }
-    
-    submitError.value = errorMsg
+    submitError.value = error.data?.message || error.message || 'Error al cambiar el rol'
   } finally {
     isLoading.value = false
   }
 }
 
 const closeModal = () => {
-  const modal = bootstrap.Modal.getInstance(document.getElementById('roleChangeModal'))
-  modal?.hide()
+  if (modalInstance) {
+    modalInstance.hide()
+  }
 }
 
 onMounted(() => {
-  const modalElement = document.getElementById('roleChangeModal')
-  if (modalElement) {
-    modalElement.addEventListener('hidden.bs.modal', () => {
-      submitError.value = ''
-      submitSuccess.value = ''
-      currentUser.value = null
-    })
-    
-    // Listener para cuando el modal se abre
-    modalElement.addEventListener('show.bs.modal', () => {
-      console.log('Modal abriendo - currentUser ya debe estar sincronizado:', currentUser.value)
-    })
+  if (process.client && !eventListenersAdded) {
+    const modalElement = document.getElementById('roleChangeModal')
+    if (modalElement) {
+      // Usar bootstrap Modal de forma más eficiente
+      modalInstance = new bootstrap.Modal(modalElement, {
+        backdrop: 'static',
+        keyboard: false
+      })
+
+      const handleHidden = () => {
+        submitError.value = ''
+        submitSuccess.value = ''
+      }
+
+      // Usar passive: true para mejor performance
+      modalElement.addEventListener('hidden.bs.modal', handleHidden, { passive: true })
+      
+      eventListenersAdded = true
+      
+      // Limpiar en desmontaje
+      onBeforeUnmount(() => {
+        if (modalElement) {
+          modalElement.removeEventListener('hidden.bs.modal', handleHidden)
+          if (modalInstance) {
+            modalInstance.dispose()
+            modalInstance = null
+          }
+        }
+        eventListenersAdded = false
+      })
+    }
   }
 })
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-
+/* ============ MODAL BASE ============ */
 .modal-custom {
-  background: linear-gradient(135deg, #1a1a1a 0%, #151515 100%);
+  background: #1a1a1a;
   border: 1px solid rgba(255, 0, 87, 0.2);
-  border-radius: 12px;
+  border-radius: 16px;
   font-family: 'Poppins', sans-serif;
   color: #fff;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
 }
 
+/* ============ MODAL HEADER ============ */
 .modal-header-custom {
-  background: linear-gradient(135deg, rgba(255, 0, 87, 0.1) 0%, rgba(255, 107, 53, 0.05) 100%);
-  border-bottom: 1px solid rgba(255, 0, 87, 0.2);
+  background: linear-gradient(135deg, #8b0035 0%, #a03a14 100%);
+  border-bottom: 1px solid rgba(255, 0, 87, 0.3);
   padding: 1.5rem;
-  border-radius: 12px 12px 0 0;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .modal-header-custom .modal-title {
   color: #fff;
   font-weight: 700;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.modal-header-custom .modal-title i {
+  font-size: 1.5rem;
 }
 
 .btn-close-custom {
-  filter: invert(1);
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
+  width: auto;
+  height: auto;
+  opacity: 0.8;
+  cursor: pointer;
+  border: none;
+  background: none !important;
+  padding: 0;
+  font-size: 1.5rem;
+  color: #fff !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0;
+  line-height: 1;
+  transition: opacity 0.2s;
+}
+
+.btn-close-custom::before {
+  content: "✕";
+  font-weight: bold;
+  font-size: 1.8rem;
 }
 
 .btn-close-custom:hover {
   opacity: 1;
 }
 
+/* ============ MODAL BODY ============ */
 .modal-body-custom {
   padding: 2rem;
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 0, 87, 0.3) transparent;
 }
 
+.modal-body-custom::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body-custom::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb {
+  background: rgba(255, 0, 87, 0.3);
+  border-radius: 3px;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 0, 87, 0.5);
+}
+
+/* ============ USER INFO CARD ============ */
 .user-info-card {
-  background: linear-gradient(135deg, rgba(255, 0, 87, 0.08) 0%, rgba(255, 107, 53, 0.02) 100%);
+  background: rgba(255, 0, 87, 0.05);
   border: 1px solid rgba(255, 0, 87, 0.15);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.d-flex.gap-3 {
+  gap: 1rem;
 }
 
 .avatar-circle {
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   color: #fff;
-  font-size: 1.2rem;
-  background: linear-gradient(135deg, #ff0057, #ff6b35);
+  font-size: 1.3rem;
+  background: #ff0057;
   box-shadow: 0 4px 12px rgba(255, 0, 87, 0.2);
   flex-shrink: 0;
 }
 
 .avatar-image {
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   overflow: hidden;
   display: flex;
@@ -369,42 +448,65 @@ onMounted(() => {
   object-fit: cover;
 }
 
+.user-info-card h6 {
+  color: #fff;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.user-info-card small {
+  color: #e0e0e0 !important;
+  font-size: 0.85rem;
+}
+
+.user-info-card .badge {
+  background: #ff0057;
+  font-size: 0.75rem;
+}
+
+/* ============ FORM LABELS ============ */
 .form-label-custom {
   color: #fff;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .form-label-custom i {
-  color: #ff0057;
+  color: #ff6348;
+  margin-right: 0.5rem;
 }
 
+/* ============ ROLE SELECTOR ============ */
 .role-selector {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .role-option {
-  background: linear-gradient(135deg, #0f0f0f 0%, #0a0a0a 100%);
+  background: #0f0f0f;
   border: 2px solid rgba(255, 0, 87, 0.15);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 1.25rem;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
 }
 
 .role-option:hover {
   border-color: rgba(255, 0, 87, 0.4);
-  background: linear-gradient(135deg, rgba(255, 0, 87, 0.05) 0%, rgba(255, 107, 53, 0.02) 100%);
+  background: rgba(255, 0, 87, 0.08);
+  transform: translateX(4px);
 }
 
-.role-option-selected {
+.role-option.role-selected {
   border-color: rgba(255, 0, 87, 0.6);
-  background: linear-gradient(135deg, rgba(255, 0, 87, 0.1) 0%, rgba(255, 107, 53, 0.05) 100%);
+  background: rgba(255, 0, 87, 0.1);
   box-shadow: 0 0 20px rgba(255, 0, 87, 0.15);
 }
 
@@ -412,7 +514,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .role-option-header label {
@@ -423,19 +525,21 @@ onMounted(() => {
   font-weight: 600;
   display: flex;
   align-items: center;
+  font-size: 0.95rem;
 }
 
 .form-check-input {
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 1.25rem;
+  height: 1.25rem;
   border: 2px solid rgba(255, 0, 87, 0.3);
   background: #0a0a0a;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s;
+  flex-shrink: 0;
 }
 
 .form-check-input:checked {
-  background: linear-gradient(135deg, #ff0057, #ff6b35);
+  background: #ff0057;
   border-color: #ff0057;
   box-shadow: 0 0 10px rgba(255, 0, 87, 0.3);
 }
@@ -443,39 +547,41 @@ onMounted(() => {
 .form-check-input:focus {
   border-color: rgba(255, 0, 87, 0.5);
   box-shadow: 0 0 0 0.2rem rgba(255, 0, 87, 0.15);
-}
-
-.role-option-label {
-  font-size: 0.95rem;
+  outline: none;
 }
 
 .role-option-description {
   color: #a0a0a0;
   font-size: 0.85rem;
   margin: 0;
-  padding-left: 2.2rem;
+  padding-left: 2.5rem;
+  line-height: 1.4;
 }
 
+/* ============ CHANGES SUMMARY ============ */
 .changes-summary {
-  background: linear-gradient(135deg, rgba(100, 200, 255, 0.08) 0%, rgba(100, 200, 255, 0.02) 100%);
+  background: rgba(100, 200, 255, 0.05);
   border: 1px solid rgba(100, 200, 255, 0.15);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .change-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
 }
 
 .change-item .label {
   color: #a0a0a0;
   font-weight: 600;
   font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .change-item .badge {
@@ -484,66 +590,109 @@ onMounted(() => {
   padding: 0.5rem 0.8rem;
   border-radius: 6px;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
+/* ============ ALERTS ============ */
 .alert-custom {
-  background: linear-gradient(135deg, rgba(255, 0, 87, 0.1) 0%, rgba(255, 107, 53, 0.05) 100%);
+  background: rgba(255, 0, 87, 0.1);
   border: 1px solid rgba(255, 0, 87, 0.3);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 1rem;
   font-weight: 500;
   font-size: 0.9rem;
+  display: block;
+  margin-bottom: 1rem;
+  animation: slideIn 0.3s ease-out;
+  line-height: 1.6;
+}
+
+.alert-custom i {
+  margin-right: 0.5rem;
+  vertical-align: text-top;
+}
+
+.alert-custom strong {
+  font-weight: 700;
+  margin-right: 0.2rem;
 }
 
 .alert-warning.alert-custom {
-  background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.05) 100%);
+  background: rgba(255, 193, 7, 0.1);
   border-color: rgba(255, 193, 7, 0.3);
   color: #ffc107;
 }
 
 .alert-info.alert-custom {
-  background: linear-gradient(135deg, rgba(100, 200, 255, 0.1) 0%, rgba(100, 200, 255, 0.05) 100%);
+  background: rgba(100, 200, 255, 0.1);
   border-color: rgba(100, 200, 255, 0.3);
   color: #64c8ff;
 }
 
 .alert-success.alert-custom {
-  background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(34, 139, 34, 0.05) 100%);
+  background: rgba(40, 167, 69, 0.1);
   border-color: rgba(40, 167, 69, 0.3);
   color: #7dd87d;
 }
 
 .alert-danger.alert-custom {
-  background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(255, 107, 107, 0.05) 100%);
+  background: rgba(220, 53, 69, 0.1);
   border-color: rgba(220, 53, 69, 0.3);
   color: #ff8787;
 }
 
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ============ MODAL FOOTER ============ */
 .modal-footer-custom {
-  background: linear-gradient(135deg, rgba(255, 0, 87, 0.02) 0%, rgba(0, 0, 0, 0.05) 100%);
+  background: rgba(255, 0, 87, 0.02);
   border-top: 1px solid rgba(255, 0, 87, 0.1);
   padding: 1.5rem;
-  border-radius: 0 0 12px 12px;
+  border-radius: 0 0 16px 16px;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .modal-footer-custom .btn {
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 600;
-  padding: 0.7rem 1.5rem;
+  padding: 0.8rem 1.8rem;
   transition: all 0.3s ease;
   font-family: 'Poppins', sans-serif;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .modal-footer-custom .btn-primary {
-  background: linear-gradient(135deg, #ff0057, #ff6b35);
+  background: #ff4757;
   border: none;
-  box-shadow: 0 4px 12px rgba(255, 0, 87, 0.2);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(255, 0, 87, 0.25);
 }
 
 .modal-footer-custom .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #e60050, #ff5722);
-  box-shadow: 0 8px 20px rgba(255, 0, 87, 0.3);
+  background: #ff3842;
+  box-shadow: 0 10px 24px rgba(255, 0, 87, 0.35);
   transform: translateY(-2px);
+}
+
+.modal-footer-custom .btn-primary:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .modal-footer-custom .btn-primary:disabled {
@@ -552,8 +701,9 @@ onMounted(() => {
 }
 
 .modal-footer-custom .btn-outline-secondary {
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   color: #fff;
+  background: transparent;
 }
 
 .modal-footer-custom .btn-outline-secondary:hover:not(:disabled) {
@@ -565,7 +715,151 @@ onMounted(() => {
   width: 1rem;
   height: 1rem;
   border-width: 0.2em;
-  border-color: rgba(255, 0, 87, 0.2) !important;
-  border-right-color: #ff0057 !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  border-right-color: #fff !important;
+  animation: fa-spin 0.8s infinite linear;
+}
+
+@keyframes fa-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ============ RESPONSIVE DESIGN ============ */
+@media (max-width: 768px) {
+  .modal-custom {
+    border-radius: 12px;
+  }
+
+  .modal-header-custom {
+    padding: 1.25rem;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .modal-header-custom .modal-title {
+    font-size: 1.1rem;
+  }
+
+  .modal-body-custom {
+    padding: 1.5rem;
+  }
+
+  .user-info-card {
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .avatar-circle,
+  .avatar-image {
+    width: 50px;
+    height: 50px;
+  }
+
+  .form-label-custom {
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .role-selector {
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .role-option {
+    padding: 1rem;
+  }
+
+  .role-option-description {
+    font-size: 0.8rem;
+  }
+
+  .changes-summary {
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .alert-custom {
+    font-size: 0.85rem;
+    padding: 0.85rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .modal-footer-custom {
+    padding: 1.25rem;
+    gap: 0.75rem;
+  }
+
+  .modal-footer-custom .btn {
+    padding: 0.7rem 1.4rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+
+  .modal-body-custom {
+    padding: 1rem;
+    max-height: 70vh;
+  }
+
+  .user-info-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .avatar-circle,
+  .avatar-image {
+    width: 45px;
+    height: 45px;
+  }
+
+  .user-info-card small {
+    font-size: 0.75rem;
+  }
+
+  .form-label-custom {
+    font-size: 0.85rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .role-option {
+    padding: 0.9rem;
+  }
+
+  .form-check-input {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  .role-option-description {
+    font-size: 0.75rem;
+  }
+
+  .changes-summary {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .alert-custom {
+    font-size: 0.8rem;
+    padding: 0.75rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .modal-footer-custom {
+    padding: 1rem;
+    gap: 0.5rem;
+    flex-direction: column-reverse;
+  }
+
+  .modal-footer-custom .btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+    justify-content: center;
+  }
 }
 </style>
