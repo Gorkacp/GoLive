@@ -45,7 +45,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -59,7 +59,17 @@ const message = ref('')
 const errorMessage = ref('')
 
 // Token desde query params
-const token = route.query.token || ''
+const token = ref(route.query.token || '')
+
+onMounted(() => {
+  console.log('📍 Página de reset-password cargada')
+  console.log('🔑 Token:', token.value)
+  console.log('📡 API Base:', config.public.apiBase)
+  
+  if (!token.value) {
+    errorMessage.value = "Error: No se encontró el token en la URL"
+  }
+})
 
 const resetPassword = async () => {
   if (!password.value || !confirmPassword.value) return
@@ -68,21 +78,32 @@ const resetPassword = async () => {
     return
   }
 
+  if (!token.value) {
+    errorMessage.value = "Error: Token no disponible"
+    return
+  }
+
   loading.value = true
   errorMessage.value = ''
   message.value = ''
 
   try {
-    await $fetch(`${config.public.apiBase}/api/auth/reset-password?token=${token}`, {
+    console.log('📤 Enviando solicitud de reset...')
+    const endpoint = `${config.public.apiBase}/api/auth/reset-password?token=${token.value}`
+    console.log('🔗 Endpoint:', endpoint)
+    
+    const response = await $fetch(endpoint, {
       method: 'POST',
       body: { password: password.value },
       headers: { 'Content-Type': 'application/json' }
     })
 
+    console.log('✅ Respuesta:', response)
     message.value = "Contraseña restablecida correctamente. Redirigiendo al login..."
     setTimeout(() => router.push('/login'), 2500)
   } catch (err) {
-    errorMessage.value = err.data?.message || 'Error al restablecer la contraseña'
+    console.error('❌ Error:', err)
+    errorMessage.value = err.data?.message || err.message || 'Error al restablecer la contraseña'
   } finally {
     loading.value = false
   }
@@ -93,7 +114,6 @@ const resetPassword = async () => {
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 
-/* Estilos del login optimizados */
 .login-container {
   position: relative;
   background-image: url('https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8Zm9uZG8lMjBkZSUyMHBhbnRhbGxhJTIwZGUlMjBldmVudG9zfGVufDB8fDB8fHww&fm=jpg&q=60&w=3000');
@@ -141,6 +161,7 @@ h2 {
   font-size: 2.25rem;
   font-weight: 700;
   background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -173,7 +194,6 @@ h2 {
 
 @keyframes slideIn { from { opacity:0; transform:translateX(-10px) } to { opacity:1; transform:translateX(0) } }
 
-/* Responsive design */
 @media (max-width: 480px) {
   .login-container {
     padding: 1rem;
@@ -197,3 +217,4 @@ h2 {
   }
 }
 </style>
+

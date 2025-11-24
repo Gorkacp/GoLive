@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,19 +26,26 @@ public class EmailService {
     @Value("${mail.from.name}")
     private String fromName;
 
-    @Async
     public void sendPasswordResetEmail(String to, String token) {
+        if (to == null || to.trim().isEmpty()) {
+            log.warn("⚠️ Intento de enviar email a dirección vacía");
+            throw new RuntimeException("Email de destino no puede estar vacío");
+        }
+
         try {
+            log.info("📧 Iniciando envío de email de recuperación a: {}", to);
+            
             // Construir el enlace de restablecimiento usando la URL del frontend
             String resetLink = frontendUrl + "/reset-password?token=" + token;
 
-            String subject = "Restablece tu contraseña";
-            String text = "Hola,\n\nRecibimos una solicitud para restablecer tu contraseña. "
-                    + "Haz clic en el siguiente enlace para cambiar tu contraseña:\n"
-                    + resetLink
-                    + "\n\nSi no solicitaste este cambio, ignora este correo.\n\n"
-                    + "Saludos,\n"
-                    + "El equipo de " + fromName;
+            String subject = "Restablece tu contraseña - GoLive";
+            String text = "Hola,\n\n" +
+                    "Recibimos una solicitud para restablecer tu contraseña. " +
+                    "Haz clic en el siguiente enlace para cambiar tu contraseña:\n\n" +
+                    resetLink + "\n\n" +
+                    "Si no solicitaste este cambio, ignora este correo.\n\n" +
+                    "Saludos,\n" +
+                    "El equipo de GoLive";
 
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromAddress);
@@ -46,11 +53,19 @@ public class EmailService {
             message.setSubject(subject);
             message.setText(text);
 
+            log.debug("📋 Detalles del email:");
+            log.debug("   From: {}", fromAddress);
+            log.debug("   To: {}", to);
+            log.debug("   Subject: {}", subject);
+
             mailSender.send(message);
-            log.info("✅ Email de recuperación enviado a {} desde {}", to, fromAddress);
+            log.info("✅ Email de recuperación enviado exitosamente a: {}", to);
+        } catch (MailException e) {
+            log.error("❌ Error de mail al enviar email a {}: {}", to, e.getMessage(), e);
+            throw new RuntimeException("Error al enviar email: " + e.getMessage(), e);
         } catch (Exception e) {
-            log.error("❌ Error al enviar email a {}: {}", to, e.getMessage());
-            throw new RuntimeException("Error al enviar email: " + e.getMessage());
+            log.error("❌ Error inesperado al enviar email a {}: {}", to, e.getMessage(), e);
+            throw new RuntimeException("Error inesperado al enviar email: " + e.getMessage(), e);
         }
     }
 }

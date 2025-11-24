@@ -517,14 +517,9 @@ public class AuthController {
 
     // src/main/java/com/golive/backend/controller/AuthController.java
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         try {
-            Optional<User> optionalUser = userService.findByEmail(request.getEmail().trim());
-            if (optionalUser.isEmpty()) {
-                return ResponseEntity.badRequest().body("No existe ningún usuario con ese correo");
-            }
-
-            // ✅ Pasa el email, no el User
+            // ✅ El email ya fue validado por @ExistingEmail
             String token = authService.generatePasswordResetToken(request.getEmail().trim());
 
             System.out.println("✅ Token de recuperación generado: " + token);
