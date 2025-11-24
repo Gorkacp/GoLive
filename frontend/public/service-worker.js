@@ -29,8 +29,14 @@ self.addEventListener('fetch', (e) => {
   const isNonCacheable = !['GET', 'HEAD'].includes(e.request.method)
   
   if (isDynamic || isNonCacheable) {
-    // Para rutas dinámicas: Network-first (sin cachear fallback offline)
-    e.respondWith(fetch(e.request))
+    // Para rutas dinámicas: intentar network, si falla devolver la página principal para que Nuxt la maneje
+    e.respondWith(
+      fetch(e.request)
+        .catch(() => {
+          // Si falla el fetch, devolver el index.html para que Nuxt maneje la navegación
+          return caches.match('/index.html') || caches.match('/')
+        })
+    )
     return
   }
 
@@ -56,6 +62,10 @@ self.addEventListener('fetch', (e) => {
           
           return response
         })
+      })
+      .catch(() => {
+        // Si falla todo, intentar servir desde caché
+        return caches.match(e.request)
       })
   )
 })
