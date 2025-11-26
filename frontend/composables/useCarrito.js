@@ -3,7 +3,7 @@
  * Centraliza toda la lógica de negocio del carrito de compras
  */
 
-const COMMISSION_PERCENTAGE = 1.5
+export const SERVICE_FEE_PER_TICKET = 1.5
 const INSURANCE_COST_PER_TICKET = 1.5
 const FEES = 0
 
@@ -41,10 +41,18 @@ export const useCarrito = (eventData) => {
   })
 
   /**
-   * Calcula la comisión (solo sobre el subtotal)
+   * Total de entradas seleccionadas
+   */
+  const totalSelectedTickets = computed(() => {
+    if (!event.value.zones) return 0
+    return event.value.zones.reduce((sum, z) => sum + (Number(z.quantity) || 0), 0)
+  })
+
+  /**
+   * Calcula la comisión fija por servicio
    */
   const commission = computed(() => {
-    return subtotal.value * (COMMISSION_PERCENTAGE / 100)
+    return totalSelectedTickets.value * SERVICE_FEE_PER_TICKET
   })
 
   /**
@@ -154,6 +162,7 @@ export const useCarrito = (eventData) => {
     insuranceCost,
     commission,
     total,
+    totalSelectedTickets,
     hasTicketsSelected,
     availabilityNotice,
     increaseQuantity,

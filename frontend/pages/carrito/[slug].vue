@@ -227,7 +227,10 @@
                 <span>{{ insuranceCost.toFixed(2) }} €</span>
               </div>
               <div class="breakdown-row">
-                <span>{{ $t('Comisión por servicio') }} ({{ commissionPercentage }}%)</span>
+                <span>
+                  {{ $t('Comisión por servicio') }}
+                  ({{ SERVICE_FEE_PER_TICKET.toFixed(2) }} € / {{ $t('entrada') }})
+                </span>
                 <span>{{ commission.toFixed(2) }} €</span>
               </div>
               <div v-if="fees > 0" class="breakdown-row">
@@ -339,7 +342,8 @@ import { useHead } from '#app'
 import { downloadAuthorizationPDF } from '~/services/authorizationPdfService'
 import { useEventApi } from '~/api/useEventApi'
 import { useEvents } from '~/composables/useEvents'
-import { useCarrito } from '~/composables/useCarrito'
+import { useCarrito, SERVICE_FEE_PER_TICKET } from '~/composables/useCarrito'
+import { useCartStore } from '~/stores/cart'
 
 // Composables
 const { getEvents, findEventBySlug } = useEventApi()
@@ -347,6 +351,7 @@ const { getEvents, findEventBySlug } = useEventApi()
 // Router
 const router = useRouter()
 const route = useRoute()
+const cartStore = useCartStore()
 
 // Estados principales
 const event = ref({
@@ -370,6 +375,7 @@ const {
   insuranceCost,
   commission,
   total,
+  totalSelectedTickets,
   hasTicketsSelected,
   availabilityNotice,
   increaseQuantity,
@@ -554,24 +560,39 @@ const goToPay = () => {
     return
   }
 
-  const selected = event.value.zones.filter(z => (z.quantity || 0) > 0)
+  const selectedZones = event.value.zones.filter(z => (z.quantity || 0) > 0)
+  const tickets = selectedZones.map(zone => ({
+    name: zone.name,
+    price: zone.price,
+    quantity: zone.quantity,
+    insurance: !!zone.insurance
+  }))
+
+  const eventId = event.value._id || event.value.id || event.value.eventId
 
   const order = {
     event: {
-      _id: event.value._id,
+      _id: eventId,
+      id: event.value.id,
+      eventId: event.value.eventId,
       title: event.value.title,
       venue: event.value.venue,
+      location: event.value.location,
       image: event.value.image,
-      date: event.value.date
+      date: event.value.date,
+      time: event.value.time
     },
-    tickets: selected,
+    tickets,
     subtotal: subtotal.value,
     insurance: insuranceCost.value,
     commission: commission.value,
+    serviceFeePerTicket: SERVICE_FEE_PER_TICKET,
+    totalTickets: totalSelectedTickets.value,
     fees: 0,
     total: total.value
   }
 
+  cartStore.setOrder(order)
   localStorage.setItem('currentOrder', JSON.stringify(order))
   router.push(`/pay/${generateSlug(event.value.title)}`)
 }

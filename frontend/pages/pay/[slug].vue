@@ -361,8 +361,16 @@
                 <span>{{ subtotal.toFixed(2) }} €</span>
               </div>
               <div class="summary-row">
-                <span>{{ $t('Comisión') }}</span>
+                <span>{{ $t('Comisión') }} ({{ SERVICE_FEE_PER_TICKET.toFixed(2) }} € / {{ $t('entrada') }})</span>
                 <span>{{ commission.toFixed(2) }} €</span>
+              </div>
+              <div class="summary-row" v-if="insurance > 0">
+                <span>{{ $t('Seguro de evento') }}</span>
+                <span>{{ insurance.toFixed(2) }} €</span>
+              </div>
+              <div class="summary-row" v-if="fees > 0">
+                <span>{{ $t('Gastos adicionales') }}</span>
+                <span>{{ fees.toFixed(2) }} €</span>
               </div>
               <div class="summary-total">
                 <span>{{ $t('Total') }}</span>
@@ -379,6 +387,9 @@
             </div>
 
             <div class="payment-methods-container">
+            <p v-if="processingPayment" class="payment-status">
+              {{ $t('Procesando tu pago, no cierres esta ventana...') }}
+            </p>
               <div id="paypal-button-container" class="paypal-container"></div>
             </div>
           </div>
@@ -391,18 +402,32 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted, nextTick, computed } from 'vue'
-import { useRoute, useRouter } from '#app'
+import { ref, reactive, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { useRoute, useRouter, useHead, useRuntimeConfig } from '#app'
 import { useCartStore } from '~/stores/cart'
-import { useHead } from '#app'
+import { useAuth } from '~/composables/useAuth'
+import { SERVICE_FEE_PER_TICKET } from '~/composables/useCarrito'
 
 const router = useRouter()
 const route = useRoute()
 const cartStore = useCartStore()
+const { getCurrentUser, getToken } = useAuth()
+const runtimeConfig = useRuntimeConfig()
+const normalizeApiBase = (base) => {
+  const trimmed = (base || '').replace(/\/+$/, '')
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`
+}
+const apiBase = normalizeApiBase(runtimeConfig.public.apiBase || 'http://localhost:8085')
+const paypalClientId = runtimeConfig.public.paypalClientId ||
+  'ASR1-nfvyjoSisSGbs8LK3xTAXdwQm48UXi0esdNNH7EWQFXdIgHeGkjV1BfdCDO5kdV53F9u98jzq31'
 
-const userLogged = ref(true)
+const currentUser = ref(null)
+const userLogged = computed(() => !!currentUser.value)
 const loading = ref(false)
 const error = ref('')
+const processingPayment = ref(false)
+const insurance = ref(0)
+const fees = ref(0)
 const timeRemaining = ref(15 * 60) // 15 minutos en segundos
 
 const goToLogin = () => router.push('/login')
@@ -443,7 +468,8 @@ const initializeAttendees = () => {
         idNumber: '',
         postalCode: '',
         country: '',
-        ticketType: ticket.name
+        ticketType: ticket.name,
+        insurance: !!ticket.insurance
       })
       errors.value.push({})
     }
@@ -456,11 +482,11 @@ const subtotal = computed(() => {
 })
 
 const commission = computed(() => {
-  return attendees.value.length * 1.5 // 1.50€ por entrada
+  return attendees.value.length * SERVICE_FEE_PER_TICKET
 })
 
 const total = computed(() => {
-  return subtotal.value + commission.value
+  return subtotal.value + commission.value + insurance.value + fees.value
 })
 
 const totalQuantity = computed(() => {
@@ -579,6 +605,15 @@ const formatTime = (seconds) => {
 
 // Función de pago
 const payWithPaypal = () => {
+  if (!userLogged.value) {
+    goToLogin()
+    return false
+  }
+
+  if (processingPayment.value) {
+    return false
+  }
+
   // Validar que todos los formularios estén completos
   if (!validateAllAttendees()) {
     // Scroll al primer error
@@ -587,25 +622,105 @@ const payWithPaypal = () => {
       behavior: 'smooth'
     })
     // Mostrar alerta al usuario
-    const errorElements = document.querySelectorAll('.error-message')
-    if (errorElements.length > 0) {
-      console.warn('Formulario incompleto. Por favor, rellena todos los campos requeridos.')
-    }
     return false
   }
   // Si todo está válido, proceder al pago
   return true
 }
 
-// Cargar datos del carrito
-onMounted(async () => {
-  loading.value = true
+const persistPayment = async (details) => {
+  const capture = details?.purchase_units?.[0]?.payments?.captures?.[0]
+  const payload = {
+    providerOrderId: details?.id,
+    providerCaptureId: capture?.id,
+    providerPayerId: details?.payer?.payer_id,
+    status: details?.status,
+    currency: capture?.amount?.currency_code || 'EUR',
+    eventId: event.value._id || event.value.id || event.value.eventId,
+    eventTitle: event.value.title,
+    eventVenue: event.value.venue,
+    eventLocation: event.value.location,
+    eventImage: event.value.image,
+    subtotal: subtotal.value,
+    commission: commission.value,
+    insurance: insurance.value,
+    fees: fees.value,
+    total: total.value,
+    userId: currentUser.value?._id || currentUser.value?.id,
+    userEmail: currentUser.value?.email,
+    payerEmail: details?.payer?.email_address,
+    tickets: tickets.value.map(ticket => ({
+      name: ticket.name,
+      price: ticket.price,
+      quantity: ticket.quantity,
+      insurance: !!ticket.insurance
+    })),
+    attendees: attendees.value.map(att => ({
+      fullName: att.fullName,
+      email: att.email,
+      phone: att.phone,
+      birthDay: att.birthDay,
+      birthMonth: att.birthMonth,
+      birthYear: att.birthYear,
+      idType: att.idType,
+      idNumber: att.idNumber,
+      postalCode: att.postalCode,
+      country: att.country,
+      ticketType: att.ticketType,
+      insurance: !!att.insurance
+    }))
+  }
+
+  processingPayment.value = true
+  try {
+    const token = getToken()
+    if (!token) {
+      throw new Error('No se encontró token de autenticación')
+    }
+
+    const requestConfig = {
+      method: 'POST',
+      body: payload,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include'
+    }
+
+    await $fetch(`${apiBase}/payments/paypal/capture`, requestConfig)
+    cartStore.clearOrder()
+    if (process.client) {
+      localStorage.removeItem('currentOrder')
+      localStorage.removeItem('orderAttendees')
+      localStorage.removeItem('lastOrderDetails')
+    }
+    router.push('/misEntradas?purchase=success')
+  } catch (err) {
+    const apiError = err?.response?.data?.error || err?.message || 'No se pudo registrar el pago. Intenta nuevamente.'
+    error.value = apiError
+    throw err
+  } finally {
+    processingPayment.value = false
+  }
+}
+
+// Cargar datos del carrito y usuario
+const fetchCurrentUser = async () => {
+  try {
+    const user = await getCurrentUser()
+    currentUser.value = user
+  } catch (err) {
+    currentUser.value = null
+  }
+}
+
+const loadOrder = async () => {
   try {
     let order = cartStore.order
 
-    // Si no hay order en store, intentar cargar de localStorage
     if (!order || !order.event || generateSlug(order.event.title) !== route.params.slug) {
-      const saved = localStorage.getItem('currentOrder')
+      const saved = process.client ? localStorage.getItem('currentOrder') : null
       if (saved) {
         try {
           const savedOrder = JSON.parse(saved)
@@ -613,18 +728,23 @@ onMounted(async () => {
             order = savedOrder
           }
         } catch (e) {
-          console.warn('Error parsing localStorage order:', e)
+          order = null
         }
       }
     }
 
     if (order?.event && order?.tickets?.length) {
-      event.value = order.event
-      tickets.value = order.tickets
+      event.value = { ...event.value, ...order.event }
+      tickets.value = order.tickets.map(ticket => ({
+        ...ticket,
+        quantity: Number(ticket.quantity) || 0,
+        price: Number(ticket.price) || 0
+      }))
+      insurance.value = Number(order.insurance) || 0
+      fees.value = Number(order.fees) || 0
 
       initializeAttendees()
 
-      // SEO
       useHead({
         title: `Pago - ${event.value.title} | GoLive`,
         meta: [
@@ -639,47 +759,90 @@ onMounted(async () => {
       error.value = 'No se encontraron entradas para comprar. Por favor, vuelve atrás.'
     }
   } catch (err) {
-    console.error('Error cargando orden:', err)
     error.value = 'Error al cargar la información. Por favor, intenta de nuevo.'
-  } finally {
-    loading.value = false
   }
+}
 
-  await nextTick()
-  loadPaypal()
+let timerInterval
 
-  // Iniciar temporizador
-  const timerInterval = setInterval(() => {
+const startTimer = () => {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+  }
+  timerInterval = setInterval(() => {
     timeRemaining.value--
     if (timeRemaining.value <= 0) {
       clearInterval(timerInterval)
       router.push('/')
     }
   }, 1000)
+}
 
-  // Limpiar intervalo cuando se desmonta
-  onUnmounted(() => clearInterval(timerInterval))
+onMounted(async () => {
+  loading.value = true
+  await fetchCurrentUser()
+  await loadOrder()
+  loading.value = false
+
+  await nextTick()
+  if (process.client && userLogged.value && attendees.value.length) {
+    loadPaypal()
+  }
+  startTimer()
 })
+
+onUnmounted(() => {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+  }
+})
+
+let paypalScriptLoading = false
+
+watch(
+  () => [userLogged.value, attendees.value.length],
+  ([logged, attendeeCount]) => {
+    if (process.client && logged && attendeeCount) {
+      loadPaypal()
+    }
+  }
+)
 
 // Carga PayPal
 const loadPaypal = () => {
+  if (!process.client) return
   if (!userLogged.value || !attendees.value.length) return
-  if (window.paypal) { renderPaypalButton(); return }
+  if (window.paypal) {
+    renderPaypalButton()
+    return
+  }
+
+  if (paypalScriptLoading) return
+  paypalScriptLoading = true
 
   const script = document.createElement('script')
-  script.src = 'https://www.paypal.com/sdk/js?client-id=ASR1-nfvyjoSisSGbs8LK3xTAXdwQm48UXi0esdNNH7EWQFXdIgHeGkjV1BfdCDO5kdV53F9u98jzq31&currency=EUR'
-  script.addEventListener('load', renderPaypalButton)
+  script.src = `https://www.paypal.com/sdk/js?client-id=${paypalClientId}&currency=EUR`
+  script.addEventListener('load', () => {
+    paypalScriptLoading = false
+    renderPaypalButton()
+  })
   document.body.appendChild(script)
 }
 
 // Renderiza el botón PayPal
 const renderPaypalButton = () => {
   if (!window.paypal || !attendees.value.length) return
+  const container = document.getElementById('paypal-button-container')
+  if (!container) return
+  container.innerHTML = ''
 
   window.paypal.Buttons({
     style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal', height: 50 },
     createOrder: (data, actions) => {
       // Validar antes de crear la orden
+      if (processingPayment.value) {
+        return actions.reject()
+      }
       const isValid = validateAllAttendees()
       
       if (!isValid) {
@@ -708,8 +871,8 @@ const renderPaypalButton = () => {
             description: `${event.value.title || 'Evento'} - ${totalQuantity.value} ${totalQuantity.value === 1 ? 'entrada' : 'entradas'}`
           }
         ]
-      }).catch(err => {
-        console.error('Error al crear la orden:', err)
+      }).catch(() => {
+        error.value = 'No se pudo iniciar el pago. Intenta nuevamente.'
         return actions.reject()
       })
     },
@@ -720,40 +883,35 @@ const renderPaypalButton = () => {
         return
       }
 
-      return actions.order.capture().then(details => {
+      return actions.order.capture().then(async details => {
         if (details.status === 'COMPLETED') {
-          // Guardar asistentes antes de redirigir
-          localStorage.setItem('orderAttendees', JSON.stringify(attendees.value))
-          localStorage.setItem('lastOrderDetails', JSON.stringify(details))
-          
-          // Pequeña pausa para asegurar que se guarden los datos
-          setTimeout(() => {
-            router.push('/misEntradas')
-          }, 500)
+          try {
+            await persistPayment(details)
+          } catch {
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          }
         }
-      }).catch(err => {
-        console.error('Error al capturar la orden:', err)
+      }).catch(() => {
+        error.value = 'No se pudo completar el pago. Intenta nuevamente.'
         window.scrollTo({ top: 0, behavior: 'smooth' })
       })
     },
     onError: (err) => {
-      console.error('Error en PayPal:', err)
+      error.value = 'Se produjo un error al inicializar el pago. Intenta nuevamente.'
       window.scrollTo({
         top: 0,
         behavior: 'smooth'
       })
     },
-    onCancel: () => {
-      console.log('Pago cancelado por el usuario')
-    }
+    onCancel: () => {}
   }).render('#paypal-button-container')
+
 }
 </script>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-/* ============ Global ============ */
 .pay-page {
   width: 100%;
   min-height: 100vh;
@@ -1095,6 +1253,14 @@ const renderPaypalButton = () => {
   gap: 16px;
   align-items: center;
   width: 100%;
+}
+
+.payment-status {
+  color: #ff0057;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  margin-bottom: 4px;
+  text-align: center;
 }
 
 /* ============ Content Wrapper ============ */

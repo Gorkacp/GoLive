@@ -3,7 +3,11 @@ import axios from 'axios'
 
 export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig()
-  const baseURL = process.dev ? '/api' : config.public.apiBase || 'http://localhost:8085'
+  const normalizeBase = (base) => {
+    const trimmed = (base || '').replace(/\/+$/, '')
+    return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`
+  }
+  const baseURL = normalizeBase(config.public.apiBase || 'http://localhost:8085/api')
   
   const api = axios.create({
     baseURL: baseURL,
