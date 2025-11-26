@@ -1,0 +1,45 @@
+version: '3.9'
+
+services:
+  frontend:
+    build: ./frontend
+    container_name: golive_frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      # Cambiado a 'backend' para que funcione dentro de la red de Docker
+      - API_URL=http://backend:8080
+    networks:
+      - golive_network
+
+  backend:
+    build: ./backend
+    container_name: golive_backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongo
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - MONGO_URI=mongodb://mongo:27017/golive
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+    networks:
+      - golive_network
+
+  mongo:
+    image: mongo:latest
+    container_name: golive_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - golive_network
+
+networks:
+  golive_network:
+
+volumes:
+  mongo_data:
