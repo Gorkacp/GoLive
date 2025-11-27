@@ -1,5 +1,7 @@
 package com.golive.backend.services;
 
+import com.golive.backend.dto.TicketInfoDto;
+import com.golive.backend.services.TicketEmailService;
 import com.golive.backend.dto.payment.AttendeeRequest;
 import com.golive.backend.dto.payment.PayPalCaptureRequest;
 import com.golive.backend.dto.payment.PaymentResultResponse;
@@ -15,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -32,6 +35,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentService {
+<<<<<<< HEAD
+=======
+    @Autowired
+    private TicketEmailService ticketEmailService;
+>>>>>>> 681a7781e003c167ae77ca5b95f72e87b03b88bf
 
     private final EventRepository eventRepository;
     private final TransactionRepository transactionRepository;
@@ -83,6 +91,32 @@ public class PaymentService {
         savedTransaction.setTicketIds(savedTickets.stream().map(Ticket::getId).collect(Collectors.toList()));
         transactionRepository.save(savedTransaction);
 
+<<<<<<< HEAD
+=======
+        try {
+            List<TicketInfoDto> ticketInfoList = new ArrayList<>();
+            int idx = 1;
+            for (Ticket ticket : savedTickets) {
+                TicketInfoDto dto = new TicketInfoDto();
+                dto.setEventName(ticket.getEventTitle());
+                dto.setCode(ticket.getTicketNumber());
+                dto.setNombre(ticket.getAttendee() != null ? ticket.getAttendee().getFullName() : user.getName());
+                dto.setDni(ticket.getAttendee() != null ? ticket.getAttendee().getIdNumber() : "");
+                dto.setPrecio(String.format("%.2f", ticket.getPrice() + ticket.getServiceFee()));
+                // dto.setIncluye(null); // No poner nada
+                dto.setUbicacion(ticket.getVenue() + " - " + ticket.getLocation());
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
+                dto.setFecha(ticket.getEventDate() != null ? sdf.format(ticket.getEventDate()) : "");
+                dto.setQrContent(ticket.getQrCode());
+                ticketInfoList.add(dto);
+                idx++;
+            }
+            String eventImagePath = savedTickets.size() > 0 ? savedTickets.get(0).getEventImage() : null;
+            ticketEmailService.sendTicketsEmail(user.getEmail(), user.getName(), ticketInfoList, eventImagePath);
+        } catch (Exception e) {
+            log.error("Error enviando email de entradas: {}", e.getMessage(), e);
+        }
+>>>>>>> 681a7781e003c167ae77ca5b95f72e87b03b88bf
         return new PaymentResultResponse(savedTransaction, savedTickets);
     }
 
