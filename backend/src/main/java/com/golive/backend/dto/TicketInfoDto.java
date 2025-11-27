@@ -1,6 +1,7 @@
 package com.golive.backend.dto;
 
 public class TicketInfoDto {
+    private String ticketId;
     private String eventName;
     private String code;
     private String nombre;
@@ -12,6 +13,8 @@ public class TicketInfoDto {
     private String qrContent;
 
     // Getters y setters
+    public String getTicketId() { return ticketId; }
+    public void setTicketId(String ticketId) { this.ticketId = ticketId; }
     public String getEventName() { return eventName; }
     public void setEventName(String eventName) { this.eventName = eventName; }
     public String getCode() { return code; }
