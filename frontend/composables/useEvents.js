@@ -1,9 +1,34 @@
 export const useEvents = () => {
   const config = useRuntimeConfig()
+  const { getToken } = useAuth()
+
+  const buildAuthHeaders = () => {
+    const token = getToken()
+    if (!token) {
+      throw new Error('No hay token de autenticación')
+    }
+    return { Authorization: `Bearer ${token}` }
+  }
   
   const getEvents = async () => {
     const data = await $fetch(`${config.public.apiBase}/events`)
     return data
+  }
+
+  const getManagedEvents = async (user) => {
+    const headers = buildAuthHeaders()
+    if (!user?.id) {
+      throw new Error('Usuario no válido')
+    }
+    const role = (user.role || '').toLowerCase()
+
+    if (role === 'super_user') {
+      return await $fetch(`${config.public.apiBase}/events`, { headers })
+    }
+
+    return await $fetch(`${config.public.apiBase}/events/owner/${user.id}`, {
+      headers
+    })
   }
 
   const createEvent = async (event) => {
@@ -21,6 +46,7 @@ export const useEvents = () => {
       
       const data = await $fetch(`${config.public.apiBase}/events`, {
         method: 'POST',
+        headers: buildAuthHeaders(),
         body: eventData
       })
       return data
@@ -44,6 +70,7 @@ export const useEvents = () => {
       
       const data = await $fetch(`${config.public.apiBase}/events/${id}`, {
         method: 'PUT',
+        headers: buildAuthHeaders(),
         body: eventData
       })
       return data
@@ -55,14 +82,26 @@ export const useEvents = () => {
 
   const deleteEvent = async (id) => {
     await $fetch(`${config.public.apiBase}/events/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: buildAuthHeaders()
+    })
+  }
+
+  const getEventAttendees = async (eventId) => {
+    if (!eventId) {
+      throw new Error('Evento no válido')
+    }
+    return await $fetch(`${config.public.apiBase}/api/tickets/events/${eventId}`, {
+      headers: buildAuthHeaders()
     })
   }
 
   return { 
     getEvents, 
+    getManagedEvents,
     createEvent, 
     updateEvent, 
-    deleteEvent 
+    deleteEvent,
+    getEventAttendees
   }
 }

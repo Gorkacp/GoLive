@@ -1,5 +1,7 @@
-const CACHE_NAME = 'golive-cache-v2'
+const CACHE_VERSION = 'v3'
+const CACHE_NAME = `golive-cache-${CACHE_VERSION}`
 const APP_SHELL = ['/', '/index.html']
+const NUXT_INTERNAL_PREFIX = '/_nuxt/'
 
 // Rutas que NO deben ser cacheadas (dinámicas)
 const DYNAMIC_ROUTES = [
@@ -38,6 +40,12 @@ self.addEventListener('activate', (event) => {
   )
 })
 
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
+})
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' && event.request.method !== 'HEAD') {
     return
@@ -45,6 +53,13 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url)
   const isDynamic = DYNAMIC_ROUTES.some((route) => url.pathname.includes(route))
+  const isNuxtAsset = url.pathname.startsWith(NUXT_INTERNAL_PREFIX)
+
+  // Evitamos cachear assets internos de Nuxt para que siempre se sirvan frescos
+  if (isNuxtAsset) {
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)))
+    return
+  }
 
   // Estrategia network-first para HTML y rutas dinámicas
   if (isHtmlRequest(event.request) || isDynamic) {

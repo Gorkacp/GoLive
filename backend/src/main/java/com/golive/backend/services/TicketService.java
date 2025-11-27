@@ -26,6 +26,10 @@ public class TicketService {
         return ticketRepository.findByTransactionId(transactionId);
     }
 
+    public List<Ticket> getTicketsByEventId(String eventId) {
+        return ticketRepository.findByEventId(eventId);
+    }
+
     public void attachDigitalAssets(String ticketId, byte[] qrImageData, byte[] ticketPdf) {
         if (ticketId == null) {
             return;

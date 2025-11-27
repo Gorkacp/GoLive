@@ -4,7 +4,8 @@ export default defineNuxtRouteMiddleware((to) => {
     if (userStr) {
       try {
         const user = JSON.parse(userStr)
-        if (user.role !== 'super_user') {
+        const role = (user.role || '').toLowerCase()
+        if (!['super_user', 'admin'].includes(role)) {
           return navigateTo('/')
         }
       } catch (error) {

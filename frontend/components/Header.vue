@@ -29,8 +29,8 @@
               </li>
 
               <li class="nav-item" v-if="userRole === 'admin' || userRole === 'super_user'">
-                <NuxtLink class="nav-link text-success" to="/crearEvento">
-                  {{ $t('Crear Evento') }}
+                <NuxtLink class="nav-link text-success" to="/backoffice">
+                  {{ $t('Backoffice') }}
                 </NuxtLink>
               </li>
 
