@@ -244,12 +244,27 @@ const handleSubmit = async () => {
 
     // Actualizar el rol en currentUser para que se refleje en el UI
     currentUser.value.role = selectedRole.value
-    
     submitSuccess.value = `Rol actualizado a ${formatRole(selectedRole.value)}`
-    
+
+    // Si el usuario está cambiando su propio rol, forzar logout y redirección
+    const sessionUserStr = sessionStorage.getItem('user')
+    let sessionUserId = null
+    if (sessionUserStr) {
+      try {
+        sessionUserId = JSON.parse(sessionUserStr)?._id || JSON.parse(sessionUserStr)?.id
+      } catch {}
+    }
+    if (userId && sessionUserId && userId === sessionUserId) {
+      // Limpiar sesión y redirigir a inicio
+      sessionStorage.removeItem('user')
+      if (typeof window !== 'undefined') {
+        window.location.href = '/'
+      }
+      return
+    }
+
     // Emitir evento de guardado y cerrar modal inmediatamente
     emit('save')
-    
     // Cerrar modal después de mostrar el mensaje de éxito
     requestAnimationFrame(() => {
       setTimeout(() => {
