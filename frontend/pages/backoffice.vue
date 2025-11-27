@@ -56,7 +56,12 @@
           </button>
         </header>
 
-        <section class="metrics-grid" id="dashboard" ref="dashboardSection">
+        <section
+          class="metrics-grid"
+          id="dashboard"
+          ref="dashboardSection"
+          v-if="activeSection === 'dashboard'"
+        >
           <div class="metric-card" v-for="metric in metricCards" :key="metric.title">
             <div class="metric-icon">
               <i :class="metric.icon"></i>
@@ -67,8 +72,8 @@
           </div>
         </section>
 
-        <section class="panel-group" id="events" ref="eventsSection">
-          <div class="panel performance-panel">
+        <section class="panel-group full-width-panel-group" id="events" ref="eventsSection">
+          <div class="panel performance-panel full-width-panel">
             <div class="panel-heading">
               <div>
                 <p class="eyebrow">Eventos</p>
@@ -149,12 +154,12 @@
                   <div v-else>
                     <div class="detail-metrics" v-if="getEventDetails(event.id)">
                       <div class="metric">
-                        <p>Entradas gestionadas</p>
-                        <h4>{{ getEventDetails(event.id)?.totalSold || 0 }}</h4>
+                        <p style="color: #fff;">Entradas gestionadas</p>
+                        <h4 style="color: #fff;">{{ getEventDetails(event.id)?.totalSold || 0 }}</h4>
                       </div>
                       <div class="metric">
-                        <p>Ingresos confirmados</p>
-                        <h4>{{ formatCurrency(getEventDetails(event.id)?.grossRevenue || 0) }}</h4>
+                        <p style="color: #fff;">Ingresos confirmados</p>
+                        <h4 style="color: #fff;">{{ formatCurrency(getEventDetails(event.id)?.grossRevenue || 0) }}</h4>
                       </div>
                     </div>
                     <div
@@ -163,27 +168,27 @@
                     >
                       <table class="attendee-table">
                         <thead>
-                          <tr>
-                            <th>Asistente</th>
-                            <th>Correo</th>
-                            <th>Zona</th>
-                            <th>Precio</th>
-                            <th>Emitido</th>
-                          </tr>
+                            <tr>
+                              <th style="color: #fff;">Asistente</th>
+                              <th style="color: #fff;">Correo</th>
+                              <th style="color: #fff;">Zona</th>
+                              <th style="color: #fff;">Precio</th>
+                              <th style="color: #fff;">Emitido</th>
+                            </tr>
                         </thead>
                         <tbody>
                           <tr
                             v-for="attendee in getEventDetails(event.id)?.attendees"
                             :key="attendee.ticketId"
                           >
-                            <td>
+                            <td style="color: #fff;">
                               <strong>{{ attendee.attendeeName || 'Sin nombre' }}</strong><br>
-                              <small>Ticket {{ attendee.ticketNumber }}</small>
+                              <small style="color: #fff;">Ticket {{ attendee.ticketNumber }}</small>
                             </td>
-                            <td>{{ attendee.attendeeEmail || 'Sin email' }}</td>
-                            <td>{{ attendee.zoneName }} <small v-if="attendee.insurance">(Seguro)</small></td>
-                            <td>{{ formatCurrency(attendee.price + attendee.serviceFee) }}</td>
-                            <td>{{ attendee.issuedAt ? new Date(attendee.issuedAt).toLocaleDateString() : '-' }}</td>
+                            <td style="color: #fff;">{{ attendee.attendeeEmail || 'Sin email' }}</td>
+                            <td style="color: #fff;">{{ attendee.zoneName }} <small v-if="attendee.insurance" style="color: #fff;">(Seguro)</small></td>
+                            <td style="color: #fff;">{{ formatCurrency(attendee.price + attendee.serviceFee) }}</td>
+                            <td style="color: #fff;">{{ attendee.issuedAt ? new Date(attendee.issuedAt).toLocaleDateString() : '-' }}</td>
                           </tr>
                         </tbody>
                       </table>
@@ -317,7 +322,10 @@
             </transition>
           </div>
 
-          <div class="panel form-panel placeholder-panel" v-else>
+          <div
+            class="panel form-panel placeholder-panel"
+            v-else-if="activeSection !== 'dashboard'"
+          >
             <div class="placeholder-content">
               <p class="eyebrow">Gestión</p>
               <h2>¿Listo para crear o editar?</h2>
@@ -491,9 +499,10 @@ const refreshData = async () => {
   loadingDashboard.value = true
   try {
     const role = (userData.value?.role || '').toLowerCase()
+    const options = role === 'super_user' ? {} : { userId: userData.value.id }
     const [userEvents, overview] = await Promise.all([
       getManagedEvents(userData.value),
-      fetchOverview({ userId: role === 'super_user' ? undefined : userData.value.id })
+      fetchOverview(options)
     ])
     events.value = userEvents || []
     dashboard.value = overview
@@ -662,7 +671,7 @@ onUnmounted(() => {
   min-height: 100vh;
   background: linear-gradient(120deg, #050505 0%, #0f0f0f 60%, #080808 100%);
   font-family: 'Poppins', sans-serif;
-  padding-top: 80px;
+  padding-top: 86px;
   overflow-x: hidden;
 }
 
@@ -674,16 +683,17 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: 270px minmax(0, 1fr);
   gap: 32px;
-  padding: 40px clamp(16px, 4vw, 48px) 40px 0;
+  align-items: stretch;
+  padding: 0 clamp(16px, 4vw, 48px) 40px 0;
 }
 
 .backoffice-sidebar {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0 24px 24px 0;
-  padding: 28px;
+  padding: 0 28px 28px 28px;
   position: sticky;
-  top: 82px;
+  top: 0;
   height: fit-content;
   margin-left: 0;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
@@ -976,12 +986,18 @@ onUnmounted(() => {
 
 .event-cover {
   position: relative;
-  height: 200px;
+  height: 100%;
+  min-height: 180px;
+  display: flex;
+  align-items: stretch;
 }
 
 .event-cover img {
   width: 100%;
   height: 100%;
+  min-height: 180px;
+  object-fit: cover;
+  display: block;
   object-fit: cover;
 }
 
@@ -1147,13 +1163,13 @@ onUnmounted(() => {
 .form-control select {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 12px;
-  color: #fff;
-  font-size: 0.95rem;
-}
-
-.form-two-col {
+    border-radius: 0 24px 24px 0;
+    padding: 0 28px 28px 28px;
+    position: sticky;
+    top: 0;
+    height: fit-content;
+    margin-left: 0;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
@@ -1242,6 +1258,14 @@ onUnmounted(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+/* Panel de rendimiento en vivo a ancho completo */
+.full-width-panel-group {
+  grid-template-columns: 1fr !important;
+}
+.full-width-panel {
+  width: 100%;
+  max-width: 100%;
 }
 </style>
 
