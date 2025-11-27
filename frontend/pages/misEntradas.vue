@@ -120,7 +120,9 @@ onMounted(loadTickets)
 .tickets-wrapper {
   width: min(1200px, 90%);
   margin: 40px auto;
+  padding-top: 80px;
   flex: 1;
+  position: relative;
 }
 
 .page-header {
@@ -128,7 +130,13 @@ onMounted(loadTickets)
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  margin-bottom: 32px;
+  margin-bottom: 40px;
+  padding: 24px 32px;
+  border-radius: 24px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 60px rgba(3, 7, 18, 0.45);
+  backdrop-filter: blur(14px);
 }
 
 .eyebrow {
@@ -139,13 +147,24 @@ onMounted(loadTickets)
 }
 
 .page-header h1 {
-  margin: 4px 0;
-  font-size: 2rem;
+  margin: 6px 0 12px;
+  font-size: 2.3rem;
 }
 
 .page-header p {
   color: #9ca3af;
   margin: 0;
+}
+
+.tickets-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  right: -60px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(255, 0, 87, 0.25), transparent 70%);
+  pointer-events: none;
 }
 
 .cta {
@@ -204,11 +223,16 @@ onMounted(loadTickets)
   .page-header {
     flex-direction: column;
     align-items: flex-start;
+    padding: 20px;
   }
 
   .tickets-wrapper {
     width: 100%;
-    padding: 0 16px 40px;
+    padding: 80px 16px 40px;
+  }
+
+  .tickets-wrapper::before {
+    display: none;
   }
 }
 </style>
