@@ -12,5 +12,7 @@ public interface TicketRepository extends MongoRepository<Ticket, String> {
     List<Ticket> findByUserIdOrderByIssuedAtDesc(String userId);
 
     List<Ticket> findByTransactionId(String transactionId);
+
+    List<Ticket> findByEventId(String eventId);
 }
 

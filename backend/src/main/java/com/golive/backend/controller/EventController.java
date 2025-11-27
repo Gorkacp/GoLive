@@ -1,6 +1,8 @@
 package com.golive.backend.controller;
 
 import com.golive.backend.model.Event;
+import com.golive.backend.model.User;
+import com.golive.backend.services.AuthService;
 import com.golive.backend.services.EventService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,9 +13,11 @@ import java.util.List;
 public class EventController {
 
     private final EventService service;
+    private final AuthService authService;
 
-    public EventController(EventService service) {
+    public EventController(EventService service, AuthService authService) {
         this.service = service;
+        this.authService = authService;
         System.out.println("🎯 EVENT CONTROLLER: Controller inicializado");
     }
 
@@ -43,7 +47,8 @@ public class EventController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createEvent(@RequestBody Event event) {
+    public ResponseEntity<?> createEvent(@RequestBody Event event,
+                                         @RequestHeader(value = "Authorization", required = false) String token) {
         System.out.println("🎯 EVENT CONTROLLER: POST /events - Creando nuevo evento");
         System.out.println("📝 EVENT CONTROLLER: Datos del evento:");
         System.out.println("   - Título: " + (event.getTitle() != null ? event.getTitle() : "NULL"));
@@ -52,6 +57,16 @@ public class EventController {
         System.out.println("   - Zonas: " + (event.getZones() != null ? event.getZones().size() : "0"));
         
         try {
+            var ownerOptional = authService.getUserFromToken(token);
+            if (ownerOptional.isEmpty()) {
+                return ResponseEntity.status(401).body("Usuario no autorizado");
+            }
+            User owner = ownerOptional.get();
+
+            event.setCreatedBy(owner.getId());
+            event.setCreatedByName(owner.getName());
+            event.setCreatedByEmail(owner.getEmail());
+
             System.out.println("🎯 EVENT CONTROLLER: Llamando a service.createEvent()");
             Event createdEvent = service.createEvent(event);
             System.out.println("✅ EVENT CONTROLLER: Evento creado exitosamente");
@@ -68,13 +83,27 @@ public class EventController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateEvent(@PathVariable String id, @RequestBody Event event) {
+    public ResponseEntity<?> updateEvent(@PathVariable String id,
+                                         @RequestBody Event event,
+                                         @RequestHeader(value = "Authorization", required = false) String token) {
         System.out.println("🎯 EVENT CONTROLLER: PUT /events/" + id + " - Actualizando evento");
         System.out.println("📝 EVENT CONTROLLER: Nuevos datos:");
         System.out.println("   - Título: " + (event.getTitle() != null ? event.getTitle() : "NULL"));
         System.out.println("   - Lugar: " + (event.getVenue() != null ? event.getVenue() : "NULL"));
         
         try {
+            Event existing = service.getEventById(id)
+                    .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+
+            if (!authService.canManageEvents(token, existing.getCreatedBy())) {
+                return ResponseEntity.status(403).body("No tienes permisos para actualizar este evento");
+            }
+
+            event.setCreatedBy(existing.getCreatedBy());
+            event.setCreatedByName(existing.getCreatedByName());
+            event.setCreatedByEmail(existing.getCreatedByEmail());
+            event.setCreatedAt(existing.getCreatedAt());
+
             System.out.println("🎯 EVENT CONTROLLER: Llamando a service.updateEvent()");
             Event updatedEvent = service.updateEvent(id, event);
             
@@ -94,10 +123,18 @@ public class EventController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteEvent(@PathVariable String id) {
+    public ResponseEntity<?> deleteEvent(@PathVariable String id,
+                                         @RequestHeader(value = "Authorization", required = false) String token) {
         System.out.println("🎯 EVENT CONTROLLER: DELETE /events/" + id + " - Eliminando evento");
         
         try {
+            Event existing = service.getEventById(id)
+                    .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+
+            if (!authService.canManageEvents(token, existing.getCreatedBy())) {
+                return ResponseEntity.status(403).body("No tienes permisos para eliminar este evento");
+            }
+
             System.out.println("🎯 EVENT CONTROLLER: Llamando a service.deleteEvent()");
             service.deleteEvent(id);
             System.out.println("✅ EVENT CONTROLLER: Evento eliminado exitosamente");
@@ -115,5 +152,24 @@ public class EventController {
     public ResponseEntity<String> test() {
         System.out.println("🎯 EVENT CONTROLLER: GET /events/test - Endpoint de prueba");
         return ResponseEntity.ok("✅ EventController funcionando - " + java.time.LocalDateTime.now());
+    }
+
+    @GetMapping("/owner/{userId}")
+    public ResponseEntity<?> getEventsByOwner(@PathVariable String userId,
+                                              @RequestHeader(value = "Authorization", required = false) String token) {
+        try {
+            boolean isSuper = authService.isSuperUser(token);
+            if (!isSuper && !authService.canManageEvents(token, userId)) {
+                return ResponseEntity.status(403).body("No tienes permisos para consultar estos eventos");
+            }
+
+            if (isSuper) {
+                return ResponseEntity.ok(service.getAllEvents());
+            }
+
+            return ResponseEntity.ok(service.getEventsByOwner(userId));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al obtener eventos: " + e.getMessage());
+        }
     }
 }

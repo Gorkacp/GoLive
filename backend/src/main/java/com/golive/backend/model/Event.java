@@ -29,6 +29,12 @@ public class Event {
     private int availableTickets;  // Campo requerido por schema MongoDB
     private List<Zone> zones;
 
+    private String createdBy;
+    private String createdByName;
+    private String createdByEmail;
+    private Date createdAt = new Date();
+    private Date updatedAt = new Date();
+
     // Constructor vacío
     public Event() {
         this.eventId = UUID.randomUUID().toString();
@@ -87,5 +93,45 @@ public class Event {
     
     public List<Zone> getZones() { return zones; }
     public void setZones(List<Zone> zones) { this.zones = zones; }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getCreatedByName() {
+        return createdByName;
+    }
+
+    public void setCreatedByName(String createdByName) {
+        this.createdByName = createdByName;
+    }
+
+    public String getCreatedByEmail() {
+        return createdByEmail;
+    }
+
+    public void setCreatedByEmail(String createdByEmail) {
+        this.createdByEmail = createdByEmail;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Date getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Date updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 
 } // fin de la clase Event

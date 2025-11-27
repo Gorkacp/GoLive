@@ -59,6 +59,9 @@ public class AuthService {
     // Verificar SUPER_USER
     public boolean isSuperUser(String token) {
         try {
+            if (token == null || token.trim().isEmpty()) {
+                return false;
+            }
             String cleanToken = token.replace("Bearer ", "");
             String userEmail = jwtService.getEmailFromToken(cleanToken);
             Optional<User> user = userService.findByEmail(userEmail);
@@ -66,6 +69,12 @@ public class AuthService {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public boolean isAdminOrSuper(String token) {
+        return getUserFromToken(token)
+                .map(user -> "super_user".equals(user.getRole()) || "admin".equals(user.getRole()))
+                .orElse(false);
     }
 
     // Verificar acceso a usuario
@@ -159,5 +168,35 @@ public class AuthService {
     // Obtener email desde el token (para uso en controladores)
     public String getEmailFromToken(String token) {
         return jwtService.getEmailFromToken(token);
+    }
+
+    public Optional<User> getUserFromToken(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            return Optional.empty();
+        }
+        try {
+            String cleanToken = token.replace("Bearer ", "").trim();
+            if (cleanToken.isEmpty()) {
+                return Optional.empty();
+            }
+            String userEmail = jwtService.getEmailFromToken(cleanToken);
+            return userService.findByEmail(userEmail);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    public boolean canManageEvents(String token, String ownerId) {
+        return getUserFromToken(token)
+                .map(user -> {
+                    if ("super_user".equals(user.getRole())) {
+                        return true;
+                    }
+                    if ("admin".equals(user.getRole())) {
+                        return ownerId == null || user.getId().equals(ownerId);
+                    }
+                    return ownerId != null && ownerId.equals(user.getId());
+                })
+                .orElse(false);
     }
 }

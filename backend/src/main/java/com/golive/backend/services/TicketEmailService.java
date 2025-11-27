@@ -20,21 +20,23 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamSource;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import jakarta.mail.*;
-import jakarta.mail.internet.*;
 
 @Service
+@RequiredArgsConstructor
 public class TicketEmailService {
-    @Autowired
-    private EmailAttachmentHelper emailAttachmentHelper;
+
+    private static final String HERO_CID = "eventHero";
+    private static final String QR_CID = "ticketQr";
+
+    private final EmailAttachmentHelper emailAttachmentHelper;
+    private final TicketService ticketService;
 
     // Llama a este método tras la compra
-    public void sendTicketsEmail(String email, String nombre, List<TicketInfoDto> tickets, String eventImagePath) throws IOException, MessagingException {
+    public void sendTicketsEmail(String email, String nombre, List<TicketInfoDto> tickets, String eventImagePath) throws IOException {
         // Adjuntamos PDF, solo título, hero, QR+info y PDF adjunto
         int total = tickets.size();
         int idx = 1;
@@ -73,11 +75,37 @@ public class TicketEmailService {
                 System.err.println("[TicketEmailService] Error cargando imagen del evento para el email: " + eventImagePath + " - " + e.getMessage());
             }
         }
+        List<InputStreamSource> inlineImages = new ArrayList<>();
+        List<String> inlineCids = new ArrayList<>();
+        boolean heroInlineAdded = false;
+        boolean qrInlineAdded = false;
+        if (eventImageBytes != null && eventImageBytes.length > 0) {
+            inlineImages.add(new ByteArrayResource(eventImageBytes));
+            inlineCids.add(HERO_CID);
+            heroInlineAdded = true;
+        }
+
         // Generar PDF y adjuntarlo
         List<InputStreamSource> pdfs = new ArrayList<>();
-        for (TicketInfoDto ticket : tickets) {
-            ByteArrayOutputStream pdf = generateTicketPdf(ticket, eventImageBytes, eventImageType, idx, total);
-            pdfs.add(new ByteArrayResource(pdf.toByteArray()));
+        for (TicketInfoDto ticketInfo : tickets) {
+            ByteArrayOutputStream pdf = generateTicketPdf(ticketInfo, eventImageBytes, eventImageType, idx, total);
+            byte[] pdfBytes = pdf.toByteArray();
+            pdfs.add(new ByteArrayResource(pdfBytes));
+
+            byte[] qrBytes = buildQrBytes(ticketInfo.getQrContent());
+
+            try {
+                ticketService.attachDigitalAssets(ticketInfo.getTicketId(), qrBytes, pdfBytes);
+            } catch (Exception e) {
+                System.err.println("[TicketEmailService] Error guardando assets para ticket " + ticketInfo.getTicketId() + ": " + e.getMessage());
+            }
+
+            if (!qrInlineAdded && qrBytes != null && qrBytes.length > 0) {
+                inlineImages.add(new ByteArrayResource(qrBytes));
+                inlineCids.add(QR_CID);
+                qrInlineAdded = true;
+            }
+
             idx++;
         }
         String subject = "Tu entrada para " + (tickets.isEmpty() ? "" : tickets.get(0).getEventName());
@@ -90,33 +118,17 @@ public class TicketEmailService {
         body.append("<div style='font-size:16px;color:#222;margin-bottom:24px;'>Hola ").append(nombre).append(", gracias por comprar a través de GoLive.</div>");
         body.append("</div>");
         // Imagen hero del evento (comprimida, inline base64, no como adjunto)
-        if (eventImageBytes != null && eventImageBytes.length > 0) {
-            try {
-                String base64Img = java.util.Base64.getEncoder().encodeToString(eventImageBytes);
-                body.append("<img src='data:image/jpeg;base64,").append(base64Img).append("' style='width:100%;max-width:700px;display:block;margin:0 auto 0 auto;border-radius:0;object-fit:cover;height:220px;' alt='Hero evento'/>");
-            } catch(Exception e) {
-                body.append("<div style='width:100%;height:220px;max-width:700px;background:#eee;display:block;margin:0 auto 0 auto;border-radius:0;'></div>");
-            }
+        if (heroInlineAdded) {
+            body.append("<img src='cid:").append(HERO_CID).append("' style='width:100%;max-width:700px;display:block;margin:0 auto 0 auto;border-radius:0;object-fit:cover;height:220px;' alt='Hero evento'/>");
         } else {
             body.append("<div style='width:100%;height:220px;max-width:700px;background:#eee;display:block;margin:0 auto 0 auto;border-radius:0;'></div>");
         }
         // Bloque de entrada con QR y datos, margen entre QR e info
         body.append("<div style='padding:40px 0 40px 0;'>");
         body.append("<div style='font-size:20px;font-weight:700;margin-bottom:24px;margin-top:0;text-align:center;'>Tu entrada</div>");
-        String qrBase64 = "";
-        boolean qrOk = false;
-        try {
-            BufferedImage qr = generateQr(ticket.getQrContent());
-            if (qr != null) {
-                java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-                ImageIO.write(qr, "png", baos);
-                qrBase64 = java.util.Base64.getEncoder().encodeToString(baos.toByteArray());
-                qrOk = true;
-            }
-        } catch(Exception e) { qrBase64 = ""; qrOk = false; }
         body.append("<div style='display:flex;align-items:flex-start;gap:48px;max-width:500px;margin:0 auto 0 auto;'>");
-        if (qrOk && qrBase64 != null && !qrBase64.isEmpty()) {
-            body.append("<div style='min-width:120px;'><img src='data:image/png;base64,").append(qrBase64).append("' style='width:120px;height:120px;border:2px solid #222;border-radius:8px;display:block;background:#fff;' alt='QR entrada'/><div style='font-size:13px;text-align:center;margin-top:8px;letter-spacing:2px;font-weight:600;'>").append(ticket.getCode()).append("</div></div>");
+        if (qrInlineAdded) {
+            body.append("<div style='min-width:120px;'><img src='cid:").append(QR_CID).append("' style='width:120px;height:120px;border:2px solid #222;border-radius:8px;display:block;background:#fff;' alt='QR entrada'/><div style='font-size:13px;text-align:center;margin-top:8px;letter-spacing:2px;font-weight:600;'>").append(ticket.getCode()).append("</div></div>");
         } else {
             body.append("<div style='min-width:120px;height:120px;background:#eee;border:2px solid #222;border-radius:8px;'></div>");
         }
@@ -130,7 +142,7 @@ public class TicketEmailService {
         body.append("</div>");
         body.append("</div>");
         // Adjuntamos el PDF generado
-        emailAttachmentHelper.sendEmailWithAttachments(email, subject, body.toString(), pdfs, "entrada.pdf", null, null);
+        emailAttachmentHelper.sendEmailWithAttachments(email, subject, body.toString(), pdfs, "entrada.pdf", inlineImages, inlineCids);
     }
 
     private ByteArrayOutputStream generateTicketPdf(TicketInfoDto ticket, byte[] eventImageBytes, String eventImageType, int idx, int total) throws IOException {
@@ -275,6 +287,23 @@ public class TicketEmailService {
             return MatrixToImageWriter.toBufferedImage(matrix);
         } catch (WriterException e) {
             throw new RuntimeException("Error generando QR", e);
+        }
+    }
+
+    private byte[] buildQrBytes(String content) {
+        if (content == null || content.isBlank()) {
+            return new byte[0];
+        }
+        try {
+            BufferedImage qr = generateQr(content);
+            if (qr == null) {
+                return new byte[0];
+            }
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(qr, "png", baos);
+            return baos.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException("Error convirtiendo QR a PNG", e);
         }
     }
 }

@@ -1,4 +1,7 @@
-const CACHE_NAME = 'golive-cache-v1'
+const CACHE_VERSION = 'v3'
+const CACHE_NAME = `golive-cache-${CACHE_VERSION}`
+const APP_SHELL = ['/', '/index.html']
+const NUXT_INTERNAL_PREFIX = '/_nuxt/'
 
 // Rutas que NO deben ser cacheadas (dinámicas)
 const DYNAMIC_ROUTES = [
@@ -11,61 +14,87 @@ const DYNAMIC_ROUTES = [
   '/carrito'
 ]
 
-self.addEventListener('install', (e) => {
+const isHtmlRequest = (request) => request.headers.get('accept')?.includes('text/html')
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).catch(() => {})
+  )
   self.skipWaiting()
 })
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(clients.claim())
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    Promise.all([
+      clients.claim(),
+      caches.keys().then((keys) =>
+        Promise.all(
+          keys.map((key) => {
+            if (key !== CACHE_NAME) {
+              return caches.delete(key)
+            }
+          })
+        )
+      )
+    ])
+  )
 })
 
-self.addEventListener('fetch', (e) => {
-  const url = new URL(e.request.url)
-  
-  // No cachear si es una ruta dinámica
-  const isDynamic = DYNAMIC_ROUTES.some(route => url.pathname.includes(route))
-  
-  // No cachear métodos POST, PUT, DELETE, PATCH
-  const isNonCacheable = !['GET', 'HEAD'].includes(e.request.method)
-  
-  if (isDynamic || isNonCacheable) {
-    // Para rutas dinámicas: intentar network, si falla devolver la página principal para que Nuxt la maneje
-    e.respondWith(
-      fetch(e.request)
-        .catch(() => {
-          // Si falla el fetch, devolver el index.html para que Nuxt maneje la navegación
-          return caches.match('/index.html') || caches.match('/')
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
+})
+
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET' && event.request.method !== 'HEAD') {
+    return
+  }
+
+  const url = new URL(event.request.url)
+  const isDynamic = DYNAMIC_ROUTES.some((route) => url.pathname.includes(route))
+  const isNuxtAsset = url.pathname.startsWith(NUXT_INTERNAL_PREFIX)
+
+  // Evitamos cachear assets internos de Nuxt para que siempre se sirvan frescos
+  if (isNuxtAsset) {
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)))
+    return
+  }
+
+  // Estrategia network-first para HTML y rutas dinámicas
+  if (isHtmlRequest(event.request) || isDynamic) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (!response || response.status !== 200) {
+            return caches.match(event.request)
+          }
+          const clone = response.clone()
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))
+          return response
         })
+        .catch(() => caches.match(event.request) || caches.match('/index.html'))
     )
     return
   }
 
-  // Para otras solicitudes GET (recursos estáticos): usar estrategia cache-first
-  e.respondWith(
-    caches.match(e.request)
-      .then((response) => {
-        if (response) {
-          return response
-        }
-        
-        return fetch(e.request).then((response) => {
-          // No cachear respuestas de error
-          if (!response || response.status !== 200) {
-            return response
+  // Para recursos estáticos: cache-first
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      if (response) {
+        return response
+      }
+
+      return fetch(event.request)
+        .then((networkResponse) => {
+          if (!networkResponse || networkResponse.status !== 200) {
+            return networkResponse
           }
-          
-          // Guardar en caché
-          const responseToCache = response.clone()
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(e.request, responseToCache)
-          })
-          
-          return response
+          const clone = networkResponse.clone()
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))
+          return networkResponse
         })
-      })
-      .catch(() => {
-        // Si falla todo, intentar servir desde caché
-        return caches.match(e.request)
-      })
+        .catch(() => caches.match(event.request))
+    })
   )
 })

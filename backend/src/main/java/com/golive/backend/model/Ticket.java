@@ -33,6 +33,8 @@ public class Ticket {
 
     private Attendee attendee;
     private String qrCode;
+    private byte[] qrImageData;
+    private byte[] ticketPdf;
     private Date issuedAt = new Date();
     private Date date = new Date();
     private boolean active = true;
@@ -187,6 +189,22 @@ public class Ticket {
 
     public void setQrCode(String qrCode) {
         this.qrCode = qrCode;
+    }
+
+    public byte[] getQrImageData() {
+        return qrImageData;
+    }
+
+    public void setQrImageData(byte[] qrImageData) {
+        this.qrImageData = qrImageData;
+    }
+
+    public byte[] getTicketPdf() {
+        return ticketPdf;
+    }
+
+    public void setTicketPdf(byte[] ticketPdf) {
+        this.ticketPdf = ticketPdf;
     }
 
     public Date getIssuedAt() {

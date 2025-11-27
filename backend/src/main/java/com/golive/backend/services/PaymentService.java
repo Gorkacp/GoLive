@@ -1,7 +1,6 @@
 package com.golive.backend.services;
 
 import com.golive.backend.dto.TicketInfoDto;
-import com.golive.backend.services.TicketEmailService;
 import com.golive.backend.dto.payment.AttendeeRequest;
 import com.golive.backend.dto.payment.PayPalCaptureRequest;
 import com.golive.backend.dto.payment.PaymentResultResponse;
@@ -17,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -35,14 +33,13 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentService {
-    @Autowired
-    private TicketEmailService ticketEmailService;
 
     private final EventRepository eventRepository;
     private final TransactionRepository transactionRepository;
     private final TicketService ticketService;
     private final UserService userService;
     private final AuthService authService;
+    private final TicketEmailService ticketEmailService;
 
     @Value("${app.payments.service-fee-per-ticket:1.5}")
     private double serviceFeePerTicket;
@@ -93,6 +90,7 @@ public class PaymentService {
             int idx = 1;
             for (Ticket ticket : savedTickets) {
                 TicketInfoDto dto = new TicketInfoDto();
+                dto.setTicketId(ticket.getId());
                 dto.setEventName(ticket.getEventTitle());
                 dto.setCode(ticket.getTicketNumber());
                 dto.setNombre(ticket.getAttendee() != null ? ticket.getAttendee().getFullName() : user.getName());
