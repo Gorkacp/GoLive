@@ -157,6 +157,9 @@
                       <div class="progress-bar" :style="{ width: `${event.performance?.occupancy || 0}%` }"></div>
                     </div>
                     <div class="event-actions">
+                      <button class="btn-text" @click.stop="viewEventAttendees(event)">
+                        <i class="fas fa-users me-2"></i>Ver asistentes
+                      </button>
                       <button class="btn-text" @click.stop="selectEvent(event)">
                         <i class="fas fa-pen me-2"></i>Editar
                       </button>
@@ -169,55 +172,66 @@
                 <div class="event-detail" v-if="expandedEventId === event.id">
                   <div v-if="attendeesLoading" class="detail-loading">
                     <div class="spinner-border text-light" role="status"></div>
-                    <p>Cargando asistentes...</p>
+                    <p>Cargando estadísticas...</p>
                   </div>
                   <div v-else-if="attendeesError" class="detail-error">
                     <i class="fas fa-exclamation-triangle me-2"></i>{{ attendeesError }}
                   </div>
-                  <div v-else>
-                    <div class="detail-metrics" v-if="getEventDetails(event.id)">
-                      <div class="metric">
-                        <p style="color: #fff;">Entradas gestionadas</p>
-                        <h4 style="color: #fff;">{{ getEventDetails(event.id)?.totalSold || 0 }}</h4>
+                  <div v-else-if="getEventDetails(event.id)" class="event-statistics">
+                    <!-- Métricas principales -->
+                    <div class="stats-grid">
+                      <div class="stat-card">
+                        <div class="stat-icon">
+                          <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                          <p class="stat-label">Total Asistentes</p>
+                          <h3 class="stat-value">{{ getEventDetails(event.id)?.totalSold || 0 }}</h3>
+                        </div>
                       </div>
-                      <div class="metric">
-                        <p style="color: #fff;">Ingresos confirmados</p>
-                        <h4 style="color: #fff;">{{ formatCurrency(getEventDetails(event.id)?.grossRevenue || 0) }}</h4>
+                      <div class="stat-card">
+                        <div class="stat-icon revenue">
+                          <i class="fas fa-euro-sign"></i>
+                        </div>
+                        <div class="stat-content">
+                          <p class="stat-label">Ingresos Totales</p>
+                          <h3 class="stat-value">{{ formatCurrency(getEventDetails(event.id)?.grossRevenue || 0) }}</h3>
+                        </div>
+                      </div>
+                      <div class="stat-card">
+                        <div class="stat-icon occupancy">
+                          <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <div class="stat-content">
+                          <p class="stat-label">Ocupación</p>
+                          <h3 class="stat-value">{{ event.performance?.occupancy || 0 }}%</h3>
+                        </div>
+                      </div>
+                      <div class="stat-card">
+                        <div class="stat-icon tickets">
+                          <i class="fas fa-ticket-alt"></i>
+                        </div>
+                        <div class="stat-content">
+                          <p class="stat-label">Vendidas / Disponibles</p>
+                          <h3 class="stat-value">{{ event.performance?.soldTickets || 0 }} / {{ event.availableTickets }}</h3>
+                        </div>
                       </div>
                     </div>
-                    <div
-                      v-if="getEventDetails(event.id)?.attendees?.length"
-                      class="attendee-table-wrapper"
-                    >
-                      <table class="attendee-table">
-                        <thead>
-                            <tr>
-                              <th style="color: #fff;">Asistente</th>
-                              <th style="color: #fff;">Correo</th>
-                              <th style="color: #fff;">Zona</th>
-                              <th style="color: #fff;">Precio</th>
-                              <th style="color: #fff;">Emitido</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                          <tr
-                            v-for="attendee in getEventDetails(event.id)?.attendees"
-                            :key="attendee.ticketId"
-                          >
-                            <td style="color: #fff;">
-                              <strong>{{ attendee.attendeeName || 'Sin nombre' }}</strong><br>
-                              <small style="color: #fff;">Ticket {{ attendee.ticketNumber }}</small>
-                            </td>
-                            <td style="color: #fff;">{{ attendee.attendeeEmail || 'Sin email' }}</td>
-                            <td style="color: #fff;">{{ attendee.zoneName }} <small v-if="attendee.insurance" style="color: #fff;">(Seguro)</small></td>
-                            <td style="color: #fff;">{{ formatCurrency(attendee.price + attendee.serviceFee) }}</td>
-                            <td style="color: #fff;">{{ attendee.issuedAt ? new Date(attendee.issuedAt).toLocaleDateString() : '-' }}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                    <div v-else class="panel-empty small">
-                      <p>Aún no hay asistentes registrados para este evento.</p>
+
+                    <!-- Gráficos -->
+                    <div class="charts-container">
+                      <div class="chart-wrapper">
+                        <h4 class="chart-title">Ventas por Zona</h4>
+                        <div class="chart-canvas-wrapper">
+                          <canvas class="zone-chart" :data-event-id="event.id"></canvas>
+                        </div>
+                      </div>
+                      <div class="chart-wrapper">
+                        <h4 class="chart-title">Distribución de Ocupación</h4>
+                        <div class="chart-canvas-wrapper">
+                          <canvas class="occupancy-chart" :data-event-id="event.id"></canvas>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -359,12 +373,144 @@
         </section>
       </main>
     </div>
+
+    <!-- Modal de Asistentes -->
+    <div v-if="showAttendeesModal" class="modal-overlay" @click.self="closeAttendeesModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2>Asistentes del Evento</h2>
+          <button class="modal-close" @click="closeAttendeesModal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div v-if="modalAttendeesLoading" class="modal-loading">
+            <div class="spinner-border text-light" role="status"></div>
+            <p>Cargando asistentes...</p>
+          </div>
+          <div v-else-if="modalAttendeesError" class="modal-error">
+            <i class="fas fa-exclamation-triangle me-2"></i>{{ modalAttendeesError }}
+          </div>
+          <div v-else-if="selectedEventAttendees?.length" class="attendees-content">
+            <div class="attendees-summary">
+              <p><strong>Total:</strong> {{ filteredAttendees.length }} de {{ selectedEventAttendees.length }} asistentes</p>
+            </div>
+            
+            <!-- Barra de búsqueda -->
+            <div class="attendees-search">
+              <div class="search-input-wrapper">
+                <i class="fas fa-search search-icon"></i>
+                <input 
+                  type="text" 
+                  v-model="searchAttendeeQuery" 
+                  placeholder="Buscar por nombre, email, ticket, zona..." 
+                  class="search-input"
+                />
+                <button 
+                  v-if="searchAttendeeQuery" 
+                  @click="searchAttendeeQuery = ''" 
+                  class="search-clear"
+                >
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Vista de tabla para desktop -->
+            <div class="attendees-table-container desktop-view" v-if="filteredAttendees.length > 0">
+              <table class="attendees-table">
+                <thead>
+                  <tr>
+                    <th>Asistente</th>
+                    <th>Correo</th>
+                    <th>Zona</th>
+                    <th>Precio</th>
+                    <th>Emitido</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="attendee in filteredAttendees" :key="attendee.ticketId">
+                    <td>
+                      <strong>{{ attendee.attendeeName || 'Sin nombre' }}</strong><br>
+                      <small>Ticket {{ attendee.ticketNumber }}</small>
+                    </td>
+                    <td>{{ attendee.attendeeEmail || 'Sin email' }}</td>
+                    <td>
+                      {{ attendee.zoneName }}
+                      <span v-if="attendee.insurance" class="insurance-badge">Seguro</span>
+                    </td>
+                    <td>{{ formatCurrency(attendee.price + attendee.serviceFee) }}</td>
+                    <td>{{ attendee.issuedAt ? new Date(attendee.issuedAt).toLocaleDateString() : '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Vista de tarjetas para móvil -->
+            <div class="attendees-cards-container mobile-view" v-if="filteredAttendees.length > 0">
+              <div v-for="attendee in filteredAttendees" :key="attendee.ticketId" class="attendee-card">
+                <div class="attendee-card-header">
+                  <div class="attendee-name-section">
+                    <h4>{{ attendee.attendeeName || 'Sin nombre' }}</h4>
+                    <p class="attendee-ticket">Ticket #{{ attendee.ticketNumber }}</p>
+                  </div>
+                  <span v-if="attendee.insurance" class="insurance-badge">Seguro</span>
+                </div>
+                <div class="attendee-card-body">
+                  <div class="attendee-info-row">
+                    <div class="info-label">
+                      <i class="fas fa-envelope"></i>
+                      <span>Correo</span>
+                    </div>
+                    <div class="info-value">{{ attendee.attendeeEmail || 'Sin email' }}</div>
+                  </div>
+                  <div class="attendee-info-row">
+                    <div class="info-label">
+                      <i class="fas fa-map-marker-alt"></i>
+                      <span>Zona</span>
+                    </div>
+                    <div class="info-value">{{ attendee.zoneName }}</div>
+                  </div>
+                  <div class="attendee-info-row">
+                    <div class="info-label">
+                      <i class="fas fa-euro-sign"></i>
+                      <span>Precio</span>
+                    </div>
+                    <div class="info-value price-value">{{ formatCurrency(attendee.price + attendee.serviceFee) }}</div>
+                  </div>
+                  <div class="attendee-info-row">
+                    <div class="info-label">
+                      <i class="fas fa-calendar"></i>
+                      <span>Fecha de compra</span>
+                    </div>
+                    <div class="info-value">{{ attendee.issuedAt ? new Date(attendee.issuedAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-' }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Mensaje cuando no hay resultados -->
+            <div v-if="filteredAttendees.length === 0 && searchAttendeeQuery" class="modal-empty">
+              <i class="fas fa-search"></i>
+              <p>No se encontraron asistentes que coincidan con "{{ searchAttendeeQuery }}"</p>
+            </div>
+          </div>
+          <div v-else class="modal-empty">
+            <i class="fas fa-users"></i>
+            <p>Aún no hay asistentes registrados para este evento.</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { nextTick } from 'vue'
+import { nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { formatDateForInput, formatDateTime } from '~/utils/formatDate'
+import { Chart, registerables } from 'chart.js'
+
+Chart.register(...registerables)
 
 definePageMeta({
   middleware: 'super-user-only'
@@ -396,6 +542,14 @@ const attendeesLoading = ref(false)
 const attendeesError = ref('')
 const isDesktop = ref(true)
 const isSidebarOpen = ref(true)
+const showAttendeesModal = ref(false)
+const modalAttendeesLoading = ref(false)
+const modalAttendeesError = ref('')
+const selectedEventAttendees = ref([])
+const selectedEventForModal = ref(null)
+const searchAttendeeQuery = ref('')
+const zoneChartRefs = ref({})
+const occupancyChartRefs = ref({})
 
 const title = ref('')
 const venue = ref('')
@@ -554,6 +708,7 @@ const viewEventDetails = async (event) => {
   attendeesError.value = ''
   if (expandedEventId.value === event.id) {
     expandedEventId.value = null
+    destroyCharts(event.id)
     return
   }
   expandedEventId.value = event.id
@@ -563,10 +718,288 @@ const viewEventDetails = async (event) => {
       const details = await getEventAttendees(event.id)
       attendeesCache.value = { ...attendeesCache.value, [event.id]: details }
     }
+    await nextTick()
+    createCharts(event)
   } catch (error) {
     attendeesError.value = error?.data?.error || error?.message || 'No se pudo cargar la información'
   } finally {
     attendeesLoading.value = false
+  }
+}
+
+const viewEventAttendees = async (event) => {
+  selectedEventForModal.value = event
+  showAttendeesModal.value = true
+  modalAttendeesLoading.value = true
+  modalAttendeesError.value = ''
+  selectedEventAttendees.value = []
+  
+  try {
+    if (!attendeesCache.value[event.id]) {
+      const details = await getEventAttendees(event.id)
+      attendeesCache.value = { ...attendeesCache.value, [event.id]: details }
+    }
+    selectedEventAttendees.value = attendeesCache.value[event.id]?.attendees || []
+  } catch (error) {
+    modalAttendeesError.value = error?.data?.error || error?.message || 'No se pudieron cargar los asistentes'
+  } finally {
+    modalAttendeesLoading.value = false
+  }
+}
+
+const closeAttendeesModal = () => {
+  showAttendeesModal.value = false
+  selectedEventAttendees.value = []
+  selectedEventForModal.value = null
+  searchAttendeeQuery.value = ''
+}
+
+const filteredAttendees = computed(() => {
+  if (!searchAttendeeQuery.value.trim()) {
+    return selectedEventAttendees.value
+  }
+  
+  const query = searchAttendeeQuery.value.toLowerCase().trim()
+  
+  return selectedEventAttendees.value.filter(attendee => {
+    const name = (attendee.attendeeName || '').toLowerCase()
+    const email = (attendee.attendeeEmail || '').toLowerCase()
+    const ticketNumber = (attendee.ticketNumber || '').toString().toLowerCase()
+    const zoneName = (attendee.zoneName || '').toLowerCase()
+    const price = formatCurrency(attendee.price + attendee.serviceFee).toLowerCase()
+    
+    return name.includes(query) ||
+           email.includes(query) ||
+           ticketNumber.includes(query) ||
+           zoneName.includes(query) ||
+           price.includes(query)
+  })
+})
+
+const createCharts = async (event) => {
+  const eventDetails = getEventDetails(event.id)
+  if (!eventDetails) return
+
+  // Destruir gráficos existentes si hay
+  destroyCharts(event.id)
+
+  // Esperar a que el DOM se actualice
+  await nextTick()
+  
+  // Función para intentar crear los gráficos
+  const tryCreateCharts = () => {
+    const zoneCanvas = document.querySelector(`canvas.zone-chart[data-event-id="${event.id}"]`)
+    const occupancyCanvas = document.querySelector(`canvas.occupancy-chart[data-event-id="${event.id}"]`)
+    
+    if (!zoneCanvas || !occupancyCanvas) {
+      // Si no están listos, intentar de nuevo
+      setTimeout(tryCreateCharts, 100)
+      return
+    }
+
+    // Gráfico de ventas por zona
+    const zoneData = calculateZoneData(eventDetails.attendees || [], event.zones || [])
+    createZoneChart(event.id, zoneData)
+
+    // Gráfico de ocupación
+    const occupancyData = {
+      sold: event.performance?.soldTickets || 0,
+      available: event.availableTickets || 0
+    }
+    createOccupancyChart(event.id, occupancyData)
+  }
+  
+  // Intentar crear los gráficos
+  tryCreateCharts()
+}
+
+const calculateZoneData = (attendees, zones) => {
+  const zoneCounts = {}
+  attendees.forEach(attendee => {
+    const zoneName = attendee.zoneName || 'Sin zona'
+    zoneCounts[zoneName] = (zoneCounts[zoneName] || 0) + 1
+  })
+  
+  // Añadir zonas sin ventas
+  zones.forEach(zone => {
+    if (!zoneCounts[zone.name]) {
+      zoneCounts[zone.name] = 0
+    }
+  })
+
+  return zoneCounts
+}
+
+const createZoneChart = (eventId, zoneData) => {
+  const canvas = document.querySelector(`canvas.zone-chart[data-event-id="${eventId}"]`)
+  if (!canvas) {
+    console.warn(`Canvas no encontrado para evento ${eventId}`)
+    return
+  }
+
+  // Destruir gráfico existente si hay
+  if (zoneChartRefs.value[eventId]) {
+    zoneChartRefs.value[eventId].destroy()
+  }
+
+  const ctx = canvas.getContext('2d')
+  const labels = Object.keys(zoneData)
+  const data = Object.values(zoneData)
+  
+  // Si no hay datos, mostrar mensaje
+  if (labels.length === 0 || data.every(d => d === 0)) {
+    return
+  }
+  
+  const colors = [
+    'rgba(255, 0, 87, 0.8)',
+    'rgba(255, 138, 0, 0.8)',
+    'rgba(255, 200, 0, 0.8)',
+    'rgba(0, 200, 255, 0.8)',
+    'rgba(150, 0, 255, 0.8)',
+    'rgba(255, 100, 150, 0.8)'
+  ]
+
+  try {
+    zoneChartRefs.value[eventId] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Ventas por Zona',
+          data: data,
+          backgroundColor: colors.slice(0, labels.length),
+          borderColor: colors.slice(0, labels.length).map(c => c.replace('0.8', '1')),
+          borderWidth: 2,
+          borderRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            borderColor: 'rgba(255, 138, 0, 0.5)',
+            borderWidth: 1
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              color: 'rgba(255, 255, 255, 0.7)',
+              stepSize: 1
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            }
+          },
+          x: {
+            ticks: {
+              color: 'rgba(255, 255, 255, 0.7)'
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            }
+          }
+        }
+      }
+    })
+  } catch (error) {
+    console.error('Error creando gráfico de zonas:', error)
+  }
+}
+
+const createOccupancyChart = (eventId, occupancyData) => {
+  const canvas = document.querySelector(`canvas.occupancy-chart[data-event-id="${eventId}"]`)
+  if (!canvas) {
+    console.warn(`Canvas de ocupación no encontrado para evento ${eventId}`)
+    return
+  }
+
+  // Destruir gráfico existente si hay
+  if (occupancyChartRefs.value[eventId]) {
+    occupancyChartRefs.value[eventId].destroy()
+  }
+
+  const ctx = canvas.getContext('2d')
+  const total = occupancyData.sold + occupancyData.available
+  
+  // Si no hay datos, no crear gráfico
+  if (total === 0) {
+    return
+  }
+
+  try {
+    occupancyChartRefs.value[eventId] = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Vendidas', 'Disponibles'],
+        datasets: [{
+          data: [occupancyData.sold, occupancyData.available],
+          backgroundColor: [
+            'rgba(255, 0, 87, 0.8)',
+            'rgba(255, 255, 255, 0.1)'
+          ],
+          borderColor: [
+            'rgba(255, 0, 87, 1)',
+            'rgba(255, 255, 255, 0.3)'
+          ],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: 'rgba(255, 255, 255, 0.8)',
+              padding: 15,
+              font: {
+                size: 12
+              }
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            borderColor: 'rgba(255, 138, 0, 0.5)',
+            borderWidth: 1,
+            callbacks: {
+              label: function(context) {
+                const label = context.label || ''
+                const value = context.parsed || 0
+                const total = context.dataset.data.reduce((a, b) => a + b, 0)
+                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0
+                return `${label}: ${value} (${percentage}%)`
+              }
+            }
+          }
+        }
+      }
+    })
+  } catch (error) {
+    console.error('Error creando gráfico de ocupación:', error)
+  }
+}
+
+const destroyCharts = (eventId) => {
+  if (zoneChartRefs.value[eventId]) {
+    zoneChartRefs.value[eventId].destroy()
+    delete zoneChartRefs.value[eventId]
+  }
+  if (occupancyChartRefs.value[eventId]) {
+    occupancyChartRefs.value[eventId].destroy()
+    delete occupancyChartRefs.value[eventId]
   }
 }
 
@@ -697,6 +1130,17 @@ onMounted(async () => {
 onUnmounted(() => {
   successMessage.value = ''
   errorMessage.value = ''
+  // Destruir todos los gráficos
+  Object.keys(zoneChartRefs.value).forEach(eventId => {
+    if (zoneChartRefs.value[eventId]) {
+      zoneChartRefs.value[eventId].destroy()
+    }
+  })
+  Object.keys(occupancyChartRefs.value).forEach(eventId => {
+    if (occupancyChartRefs.value[eventId]) {
+      occupancyChartRefs.value[eventId].destroy()
+    }
+  })
   if (process.client) {
     window.removeEventListener('resize', updateViewport)
   }
@@ -1012,6 +1456,10 @@ onUnmounted(() => {
   border-radius: 24px;
   padding: 28px;
   position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .panel-close {
@@ -1070,6 +1518,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .event-card {
@@ -1082,6 +1533,9 @@ onUnmounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.06);
   cursor: pointer;
   transition: border-color 0.2s ease, transform 0.2s ease;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
 .event-card.expanded {
@@ -1143,9 +1597,114 @@ onUnmounted(() => {
 
 .event-detail {
   grid-column: 1 / -1;
-  padding: 18px 20px 24px;
+  padding: 24px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.02);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.event-statistics {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 138, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 0, 87, 0.2), rgba(255, 138, 0, 0.2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff8a00;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.stat-icon.revenue {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(139, 195, 74, 0.2));
+  color: #4caf50;
+}
+
+.stat-icon.occupancy {
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.2), rgba(100, 181, 246, 0.2));
+  color: #2196f3;
+}
+
+.stat-icon.tickets {
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.2), rgba(186, 104, 200, 0.2));
+  color: #9c27b0;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  margin: 0 0 4px 0;
+  font-weight: 500;
+}
+
+.stat-value {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.charts-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.chart-wrapper {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.chart-title {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+}
+
+.chart-canvas-wrapper {
+  position: relative;
+  height: 300px;
+  width: 100%;
 }
 
 .detail-metrics {
@@ -1623,9 +2182,23 @@ onUnmounted(() => {
   }
   .panel {
     padding: 22px;
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   .event-card {
     grid-template-columns: 1fr;
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .event-list {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   .event-cover {
     height: 180px;
@@ -1661,6 +2234,158 @@ onUnmounted(() => {
   }
   .event-stats {
     grid-template-columns: 1fr;
+  }
+  
+  /* Estadísticas del evento */
+  .event-detail {
+    padding: 16px;
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .event-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .event-body {
+    padding: 16px;
+    box-sizing: border-box;
+  }
+  
+  .charts-container {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .chart-wrapper {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .chart-canvas-wrapper {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .stat-card {
+    padding: 16px;
+  }
+  
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  
+  .stat-value {
+    font-size: 1.25rem;
+  }
+  
+  .charts-container {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .chart-wrapper {
+    padding: 16px;
+  }
+  
+  .chart-title {
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+  
+  .chart-canvas-wrapper {
+    height: 250px;
+  }
+  
+  /* Modal responsive */
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  
+  .modal-container {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 24px 24px 0 0;
+  }
+  
+  .modal-header {
+    padding: 20px;
+  }
+  
+  .modal-header h2 {
+    font-size: 1.25rem;
+  }
+  
+  .modal-body {
+    padding: 20px;
+  }
+  
+  /* Ocultar tabla en móvil, mostrar tarjetas */
+  .desktop-view {
+    display: none !important;
+  }
+  
+  .mobile-view {
+    display: flex !important;
+  }
+  
+  .attendees-search {
+    margin-bottom: 12px;
+  }
+  
+  .search-input {
+    padding: 14px 16px 14px 48px;
+    font-size: 1rem;
+  }
+  
+  .search-clear {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .attendees-cards-container {
+    margin: 0;
+  }
+  
+  .attendee-card {
+    padding: 16px;
+  }
+  
+  .attendee-name-section h4 {
+    font-size: 1rem;
+  }
+  
+  .info-label {
+    font-size: 0.85rem;
+  }
+  
+  .info-value {
+    font-size: 0.9rem;
+  }
+  
+  .event-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .btn-text {
+    font-size: 0.85rem;
+    padding: 8px 12px;
   }
 }
 
@@ -1748,6 +2473,359 @@ onUnmounted(() => {
 .full-width-panel {
   width: 100%;
   max-width: 100%;
+}
+
+/* Modal de Asistentes */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-container {
+  background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  padding: 24px 28px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #ff0057, #ff8a00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.modal-close {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: rgba(255, 0, 87, 0.2);
+  border-color: rgba(255, 0, 87, 0.4);
+  transform: rotate(90deg);
+}
+
+.modal-body {
+  padding: 24px 28px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-loading,
+.modal-error,
+.modal-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: rgba(255, 255, 255, 0.7);
+  gap: 16px;
+}
+
+.modal-error {
+  color: #ff6b6b;
+}
+
+.modal-empty i {
+  font-size: 3rem;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.attendees-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.attendees-search {
+  margin-bottom: 8px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 16px 12px 48px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-family: 'Poppins', inherit;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: rgba(255, 138, 0, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(255, 138, 0, 0.1);
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.search-clear {
+  position: absolute;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+.search-clear:hover {
+  background: rgba(255, 0, 87, 0.2);
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.attendees-summary {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.attendees-summary p {
+  color: #fff;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.attendees-table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.desktop-view {
+  display: block;
+}
+
+.mobile-view {
+  display: none;
+}
+
+.attendees-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+/* Vista de tarjetas para móvil */
+.attendees-cards-container {
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.attendee-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+.attendee-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 138, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.attendee-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.attendee-name-section h4 {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+}
+
+.attendee-ticket {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.attendee-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.attendee-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.info-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.info-label i {
+  color: rgba(255, 138, 0, 0.8);
+  width: 16px;
+  text-align: center;
+}
+
+.info-value {
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+  flex: 1;
+  margin-left: 12px;
+}
+
+.info-value.price-value {
+  color: #4caf50;
+  font-size: 1rem;
+}
+
+.attendees-table thead {
+  background: rgba(255, 0, 87, 0.1);
+}
+
+.attendees-table th {
+  padding: 16px;
+  text-align: left;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.attendees-table td {
+  padding: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.attendees-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.attendees-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.attendees-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.attendees-table small {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
+}
+
+.insurance-badge {
+  display: inline-block;
+  background: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 6px;
 }
 
 /* Estilos del input date y time */
