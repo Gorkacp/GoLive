@@ -229,109 +229,105 @@
             <button class="panel-close" type="button" @click="closeFormPanel">
               <i class="fas fa-times"></i>
             </button>
-            <p class="eyebrow">{{ editingEvent ? 'Editando' : 'Nuevo evento' }}</p>
-            <h2>{{ editingEvent ? 'Actualiza los detalles' : 'Publica un evento premium' }}</h2>
-            <p class="subtitle">
-              Completa los campos necesarios y podrás publicar en minutos. Los datos se guardan automáticamente al enviar.
-            </p>
+            
+            <div class="form-section-header">
+              <h2 class="form-section-title">{{ editingEvent ? 'Actualizar Evento' : 'Crear Nuevo Evento' }}</h2>
+              <p class="form-section-description">
+                {{ editingEvent ? 'Modifica los datos del evento' : 'Completa los datos del evento para agregarlo a tu catálogo' }}
+              </p>
+            </div>
 
-            <form class="event-form" @submit.prevent="handleSubmit">
-              <div class="form-control">
-                <label>Título del evento</label>
-                <input v-model="title" type="text" placeholder="Ej. Gira Europa 2025" required />
-              </div>
+            <div class="form-wrapper">
+              <form class="event-form" @submit.prevent="handleSubmit">
+                <!-- Título -->
+                <div class="form-group">
+                  <label class="form-label">Título del Evento</label>
+                  <input type="text" v-model="title" class="form-input" placeholder="Ej: Concierto de Anuel AA 2025" required />
+                </div>
 
-              <div class="form-two-col">
-                <div class="form-control">
-                  <label>Venue / Recinto</label>
-                  <input v-model="venue" type="text" placeholder="Palacio de los Deportes" required />
+                <!-- Lugar y Ubicación -->
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Lugar/Recinto</label>
+                    <input type="text" v-model="venue" class="form-input" placeholder="Ej: Palacio Vistalegre" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Ubicación Exacta</label>
+                    <input type="text" v-model="location" class="form-input" placeholder="Dirección completa" required />
+                  </div>
                 </div>
-                <div class="form-control">
-                  <label>Ubicación</label>
-                  <input v-model="location" type="text" placeholder="Madrid, España" required />
-                </div>
-              </div>
 
-              <div class="form-two-col">
-                <div class="form-control">
-                  <label>Fecha</label>
-                  <input v-model="date" type="date" required />
+                <!-- Fecha y Hora -->
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Fecha</label>
+                    <input type="date" v-model="date" class="form-input" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Hora</label>
+                    <input type="time" v-model="time" class="form-input" required />
+                  </div>
                 </div>
-                <div class="form-control">
-                  <label>Hora</label>
-                  <input v-model="time" type="time" required />
-                </div>
-              </div>
 
-              <div class="form-two-col">
-                <div class="form-control">
-                  <label>Categoría</label>
-                  <select v-model="category" required>
-                    <option value="">Selecciona</option>
+                <!-- Categoría -->
+                <div class="form-group">
+                  <label class="form-label">Categoría</label>
+                  <select v-model="category" class="form-input" required>
+                    <option value="">Selecciona una categoría</option>
                     <option value="concierto">Concierto</option>
                     <option value="festival">Festival</option>
                   </select>
                 </div>
-                <div class="form-control">
-                  <label>Imagen</label>
-                  <input v-model="imageUrlInput" type="url" placeholder="URL de portada" />
-                </div>
-              </div>
 
-              <div class="zones-wrapper">
-                <div class="zones-header">
-                  <div>
-                    <p class="eyebrow small">Zonas y precios</p>
-                    <p class="subtitle">Define tus zonas premium para maximizar ingresos</p>
+                <!-- Imagen -->
+                <div class="form-group">
+                  <label class="form-label">Imagen del Evento</label>
+                  <input type="url" v-model="imageUrlInput" class="form-input" placeholder="Pega una URL de imagen" />
+                  <small class="form-hint">JPG, PNG o WebP. Máximo 15MB</small>
+                </div>
+
+                <!-- Zonas -->
+                <div class="form-group">
+                  <div class="zones-header">
+                    <label class="form-label">Zonas y Precios</label>
                   </div>
-                  <button class="btn-outline small" type="button" @click="addZone">
-                    <i class="fas fa-plus me-2"></i>Zona
+                  <p class="zone-helper">Define diferentes zonas con su precio y cantidad de entradas disponibles</p>
+                  <div class="zones-list">
+                    <div v-for="(zone, idx) in zones" :key="idx" class="zone-item">
+                      <input type="text" v-model="zone.name" class="zone-input" placeholder="General, VIP, Premium..." required />
+                      <div class="zone-inputs">
+                        <div class="input-with-prefix">
+                          <input type="number" v-model.number="zone.price" class="zone-input" placeholder="0.00" min="0" step="0.01" required />
+                          <span class="prefix">€</span>
+                        </div>
+                        <input type="number" v-model.number="zone.availableTickets" class="zone-input" placeholder="Cantidad" min="0" required />
+                      </div>
+                      <button v-if="zones.length > 1" type="button" @click="removeZone(idx)" class="zone-remove-btn">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <button type="button" @click="addZone" class="btn-add-zone">
+                    Añadir Zona
                   </button>
                 </div>
 
-                <div class="zone-item" v-for="(zone, idx) in zones" :key="idx">
-                  <input
-                    v-model="zone.name"
-                    type="text"
-                    placeholder="VIP, General..."
-                    required
-                  />
-                  <input
-                    v-model.number="zone.price"
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    placeholder="Precio (€)"
-                    required
-                  />
-                  <input
-                    v-model.number="zone.availableTickets"
-                    type="number"
-                    min="1"
-                    placeholder="Entradas"
-                    required
-                  />
-                  <button class="icon-button danger" type="button" @click="removeZone(idx)">
-                    <i class="fas fa-times"></i>
+                <!-- Botones -->
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary" :disabled="saving">
+                    <span v-if="saving">
+                      <i class="fas fa-circle-notch fa-spin me-2"></i>Guardando...
+                    </span>
+                    <span v-else>
+                      {{ editingEvent ? 'Actualizar Evento' : 'Crear Evento' }}
+                    </span>
+                  </button>
+                  <button v-if="editingEvent" type="button" @click="resetForm" class="btn btn-secondary">
+                    Cancelar
                   </button>
                 </div>
-              </div>
-
-              <div class="form-actions">
-                <button type="submit" class="btn-primary" :disabled="saving">
-                  <span v-if="saving">
-                    <i class="fas fa-circle-notch fa-spin me-2"></i>Guardando...
-                  </span>
-                  <span v-else>
-                    <i class="fas fa-save me-2"></i>
-                    {{ editingEvent ? 'Actualizar evento' : 'Crear evento' }}
-                  </span>
-                </button>
-                <button type="button" class="btn-outline" v-if="editingEvent" @click="resetForm">
-                  Cancelar
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
 
             <transition name="fade">
               <div class="alert success" v-if="successMessage">
@@ -787,7 +783,7 @@ onUnmounted(() => {
 
 .sidebar-toggle {
   position: fixed;
-  top: 140px;
+  top: 100px;
   left: 0;
   width: 48px;
   height: 64px;
@@ -965,7 +961,7 @@ onUnmounted(() => {
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 18px;
 }
 
@@ -1248,63 +1244,308 @@ onUnmounted(() => {
 .form-panel {
   position: sticky;
   top: 120px;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(10px);
+}
+
+.form-section-header {
+  margin-bottom: 32px;
+}
+
+.form-section-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 8px 0;
+  background: linear-gradient(135deg, #ff0057, #ff8a00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.form-section-description {
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0;
+  font-weight: 400;
+}
+
+.form-wrapper {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .event-form {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  margin-top: 16px;
+  gap: 24px;
 }
 
-.form-control {
+.form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
-.form-control label {
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 500;
+.form-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.2px;
 }
 
-.form-control input,
-.form-control select {
-  background: rgba(255, 255, 255, 0.05);
+.form-input {
+  padding: 12px 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  padding: 12px 16px;
+  font-size: 0.95rem;
+  font-family: 'Poppins', inherit;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.05);
   color: #fff;
-  font-size: 1rem;
 }
 
-.form-control input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+.form-input:focus {
+  outline: none;
+  border-color: rgba(255, 0, 87, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 0, 87, 0.1), 0 0 20px rgba(255, 138, 0, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
 }
 
-.form-two-col {
+.form-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.form-input option {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.form-input select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23fff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.form-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 
-.zones-wrapper {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px dashed rgba(255, 255, 255, 0.15);
-  border-radius: 18px;
-  padding: 16px;
+.form-hint {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  display: block;
+  margin-top: 6px;
+}
+
+/* Zonas */
+.zones-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.zone-helper {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.zones-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.zones-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.zones-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.zones-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 138, 0, 0.3);
+  border-radius: 10px;
+}
+
+.zones-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 138, 0, 0.5);
 }
 
 .zone-item {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 40px;
+  grid-template-columns: 2fr 1.5fr 1.5fr auto;
+  gap: 16px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.zone-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 138, 0, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.zone-input {
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: 'Poppins', inherit;
+  transition: all 0.3s ease;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.zone-input:focus {
+  outline: none;
+  border-color: rgba(255, 0, 87, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(255, 0, 87, 0.1);
+}
+
+.zone-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin-top: 12px;
+  align-items: center;
+}
+
+.input-with-prefix {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-prefix .zone-input {
+  padding-right: 32px;
+  width: 100%;
+}
+
+.prefix {
+  position: absolute;
+  right: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.zone-remove-btn {
+  background: #991b1b;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.zone-remove-btn:hover {
+  background: #7f1515;
+  transform: scale(1.05);
+}
+
+.btn-add-zone {
+  padding: 12px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Poppins', inherit;
+}
+
+.btn-add-zone:hover {
+  background: linear-gradient(135deg, rgba(255, 0, 87, 0.2), rgba(255, 138, 0, 0.2));
+  border-color: rgba(255, 138, 0, 0.4);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255, 138, 0, 0.2);
 }
 
 .form-actions {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 12px;
+  margin-top: 12px;
+}
+
+.btn {
+  padding: 14px 40px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  font-family: 'Poppins', inherit;
+  text-align: center;
+  min-width: 200px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #ff0057, #ff8a00);
+  color: white;
+  box-shadow: 0 4px 16px rgba(255, 0, 87, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(255, 0, 87, 0.4);
+  background: linear-gradient(135deg, #ff0066, #ff9500);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
 }
 
 .alert {
@@ -1320,11 +1561,25 @@ onUnmounted(() => {
 .alert.success {
   background: rgba(76, 175, 80, 0.15);
   color: #8cf598;
+  border: 1px solid rgba(76, 175, 80, 0.3);
 }
 
 .alert.error {
   background: rgba(255, 87, 34, 0.15);
   color: #ffb199;
+  border: 1px solid rgba(255, 87, 34, 0.3);
+}
+
+.form-panel .panel-close {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.form-panel .panel-close:hover {
+  background: rgba(255, 0, 87, 0.2);
+  color: #fff;
+  border-color: rgba(255, 0, 87, 0.4);
 }
 
 @media (max-width: 1200px) {
@@ -1356,10 +1611,15 @@ onUnmounted(() => {
 @media (max-width: 768px) {
   .content-header {
     flex-direction: column;
-    padding: 24px;
+    padding: 20px;
+    gap: 16px;
   }
   .content-header h1 {
-    font-size: 2rem;
+    font-size: 1.75rem;
+  }
+  
+  .backoffice-content {
+    gap: 20px;
   }
   .panel {
     padding: 22px;
@@ -1371,18 +1631,100 @@ onUnmounted(() => {
     height: 180px;
   }
   .form-two-col,
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
   .zone-item {
     grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .zone-inputs {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-wrapper {
+    padding: 20px;
+  }
+  
+  .form-section-title {
+    font-size: 1.5rem;
+  }
+  
+  .form-actions {
+    width: 100%;
+  }
+  
+  .btn {
+    width: 100%;
   }
   .event-stats {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 600px) {
-  .metric-card {
-    padding: 16px;
+@media (max-width: 992px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
+  
+  .metric-card {
+    padding: 14px;
+  }
+  
+  .metric-icon {
+    width: 36px;
+    height: 36px;
+    margin-bottom: 10px;
+  }
+  
+  .metric-value {
+    font-size: 1.75rem;
+  }
+  
+  .metric-label {
+    font-size: 0.85rem;
+  }
+  
+  .metric-foot {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .metric-card {
+    padding: 12px;
+    border-radius: 14px;
+  }
+  
+  .metric-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+  }
+  
+  .metric-value {
+    font-size: 1.5rem;
+    margin: 2px 0;
+  }
+  
+  .metric-label {
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+  }
+  
+  .metric-foot {
+    font-size: 0.7rem;
+  }
+  
   .panel-heading {
     flex-direction: column;
     align-items: flex-start;
@@ -1406,6 +1748,43 @@ onUnmounted(() => {
 .full-width-panel {
   width: 100%;
   max-width: 100%;
+}
+
+/* Estilos del input date y time */
+.form-input[type="date"],
+.form-input[type="time"] {
+  font-family: 'Poppins', inherit !important;
+  color-scheme: dark;
+}
+
+.form-input[type="date"]::-webkit-calendar-picker-indicator,
+.form-input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  border-radius: 4px;
+  margin-right: 4px;
+  opacity: 0.7;
+  filter: invert(1) brightness(0.8);
+  transition: all 0.2s ease;
+}
+
+.form-input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.form-input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  filter: invert(1) brightness(1);
+}
+
+/* Estilos para Firefox */
+.form-input[type="date"]::-moz-calendar-picker-indicator,
+.form-input[type="time"]::-moz-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+  filter: invert(1) brightness(0.8);
+}
+
+.form-input[type="date"]::-moz-calendar-picker-indicator:hover,
+.form-input[type="time"]::-moz-calendar-picker-indicator:hover {
+  opacity: 1;
+  filter: invert(1) brightness(1);
 }
 </style>
 
