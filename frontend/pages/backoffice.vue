@@ -4,8 +4,31 @@
       <Header />
     </ClientOnly>
 
+    <button
+      v-if="!isDesktop"
+      type="button"
+      class="sidebar-toggle"
+      :class="{ open: isSidebarOpen }"
+      @click="toggleSidebar"
+      aria-label="Alternar menú lateral"
+    >
+      {{ isSidebarOpen ? '>' : '<' }}
+    </button>
+    <div
+      v-if="!isDesktop"
+      class="sidebar-overlay"
+      :class="{ visible: isSidebarOpen }"
+      @click="toggleSidebar"
+    ></div>
+
     <div class="backoffice-shell">
-      <aside class="backoffice-sidebar">
+      <aside
+        class="backoffice-sidebar"
+        :class="{
+          'mobile-sidebar': !isDesktop,
+          open: isSidebarOpen || isDesktop
+        }"
+      >
         <div class="sidebar-header">
           <p class="eyebrow">Panel</p>
           <h2>Backoffice</h2>
@@ -375,6 +398,8 @@ const expandedEventId = ref(null)
 const attendeesCache = ref({})
 const attendeesLoading = ref(false)
 const attendeesError = ref('')
+const isDesktop = ref(true)
+const isSidebarOpen = ref(true)
 
 const title = ref('')
 const venue = ref('')
@@ -394,6 +419,18 @@ const navigation = [
   { id: 'events', label: 'Eventos', icon: 'fas fa-music' },
   { id: 'form', label: 'Nuevo evento', icon: 'fas fa-plus-circle' }
 ]
+
+const updateViewport = () => {
+  if (!process.client) return
+  const desktop = window.innerWidth >= 1024
+  isDesktop.value = desktop
+  isSidebarOpen.value = desktop
+}
+
+const toggleSidebar = () => {
+  if (isDesktop.value) return
+  isSidebarOpen.value = !isSidebarOpen.value
+}
 
 const scrollToSection = (sectionId) => {
   const target = {
@@ -417,6 +454,9 @@ const handleNavClick = (sectionId) => {
     showFormPanel.value = true
   }
   goToSection(sectionId)
+  if (!isDesktop.value) {
+    isSidebarOpen.value = false
+  }
 }
 
 const getEventDetails = (eventId) => {
@@ -648,6 +688,10 @@ const confirmDeletion = async (eventId) => {
 
 onMounted(async () => {
   loadUser()
+  if (process.client) {
+    updateViewport()
+    window.addEventListener('resize', updateViewport)
+  }
   if (!userData.value) {
     return navigateTo('/login')
   }
@@ -657,6 +701,9 @@ onMounted(async () => {
 onUnmounted(() => {
   successMessage.value = ''
   errorMessage.value = ''
+  if (process.client) {
+    window.removeEventListener('resize', updateViewport)
+  }
 })
 </script>
 
@@ -697,6 +744,68 @@ onUnmounted(() => {
   height: fit-content;
   margin-left: 0;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  transition: transform 0.3s ease;
+}
+
+.backoffice-sidebar.mobile-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: min(320px, 85vw);
+  max-width: 360px;
+  transform: translateX(-110%);
+  border-radius: 0 24px 24px 0;
+  padding-top: 96px;
+  padding-left: 24px;
+  padding-right: 24px;
+  overflow-y: auto;
+  z-index: 1200;
+  pointer-events: none;
+  background: #0a0a0a;
+}
+
+.backoffice-sidebar.mobile-sidebar.open {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 1100;
+}
+
+.sidebar-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sidebar-toggle {
+  position: fixed;
+  top: 140px;
+  left: 0;
+  width: 48px;
+  height: 64px;
+  border: none;
+  border-radius: 0 32px 32px 0;
+  background: linear-gradient(135deg, #ff0057, #ff8a00);
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 600;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.sidebar-toggle.open {
+  left: calc(min(320px, 85vw) - 12px);
 }
 
 .sidebar-header h2 {
@@ -1163,15 +1272,19 @@ onUnmounted(() => {
 .form-control select {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 0 24px 24px 0;
-    padding: 0 28px 28px 28px;
-    position: sticky;
-    top: 0;
-    height: fit-content;
-    margin-left: 0;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.form-control input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.form-two-col {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -1231,9 +1344,25 @@ onUnmounted(() => {
   }
 }
 
+@media (max-width: 1023px) {
+  .sidebar-toggle {
+    display: flex;
+  }
+  .backoffice-shell {
+    padding: 20px 16px 32px;
+  }
+}
+
 @media (max-width: 768px) {
   .content-header {
     flex-direction: column;
+    padding: 24px;
+  }
+  .content-header h1 {
+    font-size: 2rem;
+  }
+  .panel {
+    padding: 22px;
   }
   .event-card {
     grid-template-columns: 1fr;
@@ -1245,8 +1374,19 @@ onUnmounted(() => {
   .zone-item {
     grid-template-columns: 1fr;
   }
-  .backoffice-shell {
-    padding: 20px 16px;
+  .event-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .metric-card {
+    padding: 16px;
+  }
+  .panel-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 }
 
