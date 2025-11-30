@@ -143,7 +143,22 @@
 <script setup>
 import { useHead } from '#app'
 useHead({
-  title: 'Login | GoLive'
+  title: 'Login | GoLive',
+  meta: [
+    { name: 'description', content: 'Accede a tu cuenta GoLive para gestionar tus entradas, eventos y perfil de usuario.' },
+    { property: 'og:title', content: 'Login | GoLive' },
+    { property: 'og:description', content: 'Accede a tu cuenta GoLive para gestionar tus entradas, eventos y perfil de usuario.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: 'https://golive-hu5d.onrender.com/login' },
+    { property: 'og:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: 'Login | GoLive' },
+    { name: 'twitter:description', content: 'Accede a tu cuenta GoLive para gestionar tus entradas, eventos y perfil de usuario.' },
+    { name: 'twitter:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' }
+  ],
+  link: [
+    { rel: 'canonical', href: 'https://golive-hu5d.onrender.com/login' }
+  ]
 })
 
 import { ref, onMounted, watch, computed } from 'vue'

@@ -382,7 +382,22 @@ import EventCard from '~/components/EventCard.vue'
 import { formatDateISO } from '~/utils/formatDate'
 
 useHead({
-  title: 'Conciertos | GoLive'
+  title: 'Conciertos | GoLive',
+  meta: [
+    { name: 'description', content: 'Descubre y compra entradas para los mejores conciertos en GoLive. Vive la música en directo y no te pierdas ningún evento.' },
+    { property: 'og:title', content: 'Conciertos | GoLive' },
+    { property: 'og:description', content: 'Descubre y compra entradas para los mejores conciertos en GoLive. Vive la música en directo y no te pierdas ningún evento.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: 'https://golive-hu5d.onrender.com/conciertos' },
+    { property: 'og:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: 'Conciertos | GoLive' },
+    { name: 'twitter:description', content: 'Descubre y compra entradas para los mejores conciertos en GoLive.' },
+    { name: 'twitter:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' }
+  ],
+  link: [
+    { rel: 'canonical', href: 'https://golive-hu5d.onrender.com/conciertos' }
+  ]
 })
 
 const config = useRuntimeConfig()

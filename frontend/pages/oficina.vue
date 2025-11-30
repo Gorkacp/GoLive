@@ -220,6 +220,26 @@
 </template>
 
 <script setup>
+import { useHead } from '#app'
+
+useHead({
+  title: 'Oficina | GoLive',
+  meta: [
+    { name: 'description', content: 'Panel de administración de usuarios y permisos en GoLive. Gestiona roles, usuarios y accede a estadísticas avanzadas.' },
+    { property: 'og:title', content: 'Oficina | GoLive' },
+    { property: 'og:description', content: 'Panel de administración de usuarios y permisos en GoLive. Gestiona roles, usuarios y accede a estadísticas avanzadas.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: 'https://golive-hu5d.onrender.com/oficina' },
+    { property: 'og:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: 'Oficina | GoLive' },
+    { name: 'twitter:description', content: 'Panel de administración de usuarios y permisos en GoLive.' },
+    { name: 'twitter:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' }
+  ],
+  link: [
+    { rel: 'canonical', href: 'https://golive-hu5d.onrender.com/oficina' }
+  ]
+})
 definePageMeta({ middleware: 'super-user-only' })
 
 const config = useRuntimeConfig()

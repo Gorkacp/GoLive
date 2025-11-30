@@ -102,7 +102,22 @@ const loadTickets = async () => {
 }
 
 useHead({
-  title: 'Mis entradas | GoLive'
+  title: 'Mis entradas | GoLive',
+  meta: [
+    { name: 'description', content: 'Consulta, descarga y gestiona todas tus entradas digitales de eventos en GoLive desde un solo lugar.' },
+    { property: 'og:title', content: 'Mis entradas | GoLive' },
+    { property: 'og:description', content: 'Consulta, descarga y gestiona todas tus entradas digitales de eventos en GoLive desde un solo lugar.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: 'https://golive-hu5d.onrender.com/misEntradas' },
+    { property: 'og:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: 'Mis entradas | GoLive' },
+    { name: 'twitter:description', content: 'Consulta, descarga y gestiona todas tus entradas digitales de eventos en GoLive desde un solo lugar.' },
+    { name: 'twitter:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' }
+  ],
+  link: [
+    { rel: 'canonical', href: 'https://golive-hu5d.onrender.com/misEntradas' }
+  ]
 })
 
 onMounted(loadTickets)

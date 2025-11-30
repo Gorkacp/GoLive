@@ -205,7 +205,22 @@ import EventCard from '~/components/EventCard.vue'
 import phone1 from '~/assets/img/phone1.png'
 
 useHead({
-  title: 'Entradas para tus eventos | GoLive'
+  title: 'Entradas para tus eventos | GoLive',
+  meta: [
+    { name: 'description', content: 'Compra entradas para conciertos, festivales y eventos en GoLive. Descubre y vive la mejor música en directo. ¡Tus eventos favoritos en un solo lugar!' },
+    { property: 'og:title', content: 'Entradas para tus eventos | GoLive' },
+    { property: 'og:description', content: 'Compra entradas para conciertos, festivales y eventos en GoLive. Descubre y vive la mejor música en directo.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: 'https://golive-hu5d.onrender.com/' },
+    { property: 'og:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: 'Entradas para tus eventos | GoLive' },
+    { name: 'twitter:description', content: 'Compra entradas para conciertos, festivales y eventos en GoLive.' },
+    { name: 'twitter:image', content: 'https://golive.com/assets/img/1.jpg' }
+  ],
+  link: [
+    { rel: 'canonical', href: 'https://golive-hu5d.onrender.com/' }
+  ]
 })
 
 const config = useRuntimeConfig()

@@ -519,7 +519,19 @@ definePageMeta({
 useHead({
   title: 'Backoffice | GoLive',
   meta: [
-    { name: 'description', content: 'Dashboard profesional para gestionar eventos, ventas y ganancias.' }
+    { name: 'description', content: 'Dashboard profesional para gestionar eventos, ventas y ganancias.' },
+    { property: 'og:title', content: 'Backoffice | GoLive' },
+    { property: 'og:description', content: 'Dashboard profesional para gestionar eventos, ventas y ganancias.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: 'https://golive-hu5d.onrender.com/backoffice' },
+    { property: 'og:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: 'Backoffice | GoLive' },
+    { name: 'twitter:description', content: 'Dashboard profesional para gestionar eventos, ventas y ganancias.' },
+    { name: 'twitter:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' }
+  ],
+  link: [
+    { rel: 'canonical', href: 'https://golive-hu5d.onrender.com/backoffice' }
   ]
 })
 

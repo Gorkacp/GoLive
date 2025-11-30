@@ -454,6 +454,26 @@
 </template>
 
 <script setup>
+import { useHead } from '#app'
+
+useHead({
+  title: 'Perfil | GoLive',
+  meta: [
+    { name: 'description', content: 'Gestiona tu perfil de usuario en GoLive: actualiza tus datos, cambia tu contraseña y administra tu cuenta.' },
+    { property: 'og:title', content: 'Perfil | GoLive' },
+    { property: 'og:description', content: 'Gestiona tu perfil de usuario en GoLive: actualiza tus datos, cambia tu contraseña y administra tu cuenta.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: 'https://golive-hu5d.onrender.com/perfil' },
+    { property: 'og:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: 'Perfil | GoLive' },
+    { name: 'twitter:description', content: 'Gestiona tu perfil de usuario en GoLive.' },
+    { name: 'twitter:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' }
+  ],
+  link: [
+    { rel: 'canonical', href: 'https://golive-hu5d.onrender.com/perfil' }
+  ]
+})
 import { ref, onMounted } from 'vue'
 import Header from '~/components/Header.vue'
 import Footer from '~/components/Footer.vue'

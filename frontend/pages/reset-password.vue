@@ -45,6 +45,25 @@
 </template>
 
 <script setup>
+import { useHead } from '#imports'
+useHead({
+  title: 'Restablecer contraseña | GoLive',
+  meta: [
+    { name: 'description', content: 'Restablece tu contraseña de forma segura en GoLive y recupera el acceso a tu cuenta.' },
+    { property: 'og:title', content: 'Restablecer contraseña | GoLive' },
+    { property: 'og:description', content: 'Restablece tu contraseña de forma segura en GoLive y recupera el acceso a tu cuenta.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: 'https://golive-hu5d.onrender.com/reset-password' },
+    { property: 'og:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: 'Restablecer contraseña | GoLive' },
+    { name: 'twitter:description', content: 'Restablece tu contraseña de forma segura en GoLive y recupera el acceso a tu cuenta.' },
+    { name: 'twitter:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' }
+  ],
+  link: [
+    { rel: 'canonical', href: 'https://golive-hu5d.onrender.com/reset-password' }
+  ]
+})
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 

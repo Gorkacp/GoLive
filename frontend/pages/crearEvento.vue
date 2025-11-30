@@ -165,9 +165,19 @@ definePageMeta({
 useHead({
   title: 'Crear Evento | GoLive',
   meta: [
-    { name: 'description', content: 'Administra y crea tus eventos musicales de forma profesional con GoLive' },
+    { name: 'description', content: 'Administra y crea tus eventos musicales de forma profesional con GoLive.' },
     { property: 'og:title', content: 'Crear Evento | GoLive' },
-    { property: 'og:description', content: 'Administra y crea tus eventos musicales de forma profesional' }
+    { property: 'og:description', content: 'Administra y crea tus eventos musicales de forma profesional con GoLive.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: 'https://golive-hu5d.onrender.com/crearEvento' },
+    { property: 'og:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: 'Crear Evento | GoLive' },
+    { name: 'twitter:description', content: 'Administra y crea tus eventos musicales de forma profesional con GoLive.' },
+    { name: 'twitter:image', content: 'https://golive-hu5d.onrender.com/assets/img/1.jpg' }
+  ],
+  link: [
+    { rel: 'canonical', href: 'https://golive-hu5d.onrender.com/crearEvento' }
   ]
 })
 
