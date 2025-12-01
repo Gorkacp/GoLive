@@ -1068,7 +1068,8 @@ const buildPayload = () => {
     title: title.value.trim(),
     venue: venue.value.trim(),
     location: location.value.trim(),
-    date: new Date(date.value).toISOString(),
+    // Enviamos la fecha en formato YYYY-MM-DD para que el backend la parsee sin problemas de huso horario
+    date: date.value,
     time: time.value,
     category: category.value,
     image: imageUrlInput.value || editingEvent.value?.image || '',
