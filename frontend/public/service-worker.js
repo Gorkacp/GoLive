@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v6'
+const CACHE_VERSION = 'v7'
 const CACHE_NAME = `golive-cache-${CACHE_VERSION}`
 const APP_SHELL = ['/', '/index.html']
 const NUXT_INTERNAL_PREFIX = '/_nuxt/'
@@ -27,7 +27,6 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      // Tomar control de los clientes y limpiar cachés antiguas
       await clients.claim()
 
       const keys = await caches.keys()
@@ -39,7 +38,6 @@ self.addEventListener('activate', (event) => {
         })
       )
 
-      // Forzar recarga de todas las pestañas controladas por el nuevo SW
       const allClients = await clients.matchAll({ type: 'window', includeUncontrolled: true })
       allClients.forEach((client) => {
         if ('navigate' in client) {
@@ -62,6 +60,12 @@ self.addEventListener('fetch', (event) => {
   }
 
   const url = new URL(event.request.url)
+  // No interceptamos peticiones de otros orígenes (CloudFront, APIs externas, etc.)
+  // para evitar errores cuando no hay caché disponible y la red falla.
+  if (url.origin !== self.location.origin) {
+    return
+  }
+
   const isDynamic = DYNAMIC_ROUTES.some((route) => url.pathname.includes(route))
   const isNuxtAsset = url.pathname.startsWith(NUXT_INTERNAL_PREFIX)
 
@@ -71,7 +75,6 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Estrategia network-first para HTML y rutas dinámicas
   if (isHtmlRequest(event.request) || isDynamic) {
     event.respondWith(
       fetch(event.request)
@@ -88,7 +91,6 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Para recursos estáticos: cache-first
   event.respondWith(
     caches.match(event.request).then((response) => {
       if (response) {
@@ -109,7 +111,6 @@ self.addEventListener('fetch', (event) => {
   )
 })
 
-// --- Notificaciones push ---
 
 self.addEventListener('push', (event) => {
   if (!event.data) {
