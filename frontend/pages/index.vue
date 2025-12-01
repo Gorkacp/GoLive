@@ -253,10 +253,7 @@ const loadEvents = async () => {
       const dateB = new Date(b.date || b.eventDate || '9999-12-31')
       return dateA - dateB
     })
-
-    console.log('✅ Eventos cargados:', events.value.length)
   } catch (err) {
-    console.error('❌ Error cargando eventos:', err)
     error.value = 'Error al cargar los eventos. Intenta nuevamente.'
   } finally {
     loading.value = false
@@ -329,17 +326,8 @@ const installApp = async (platform) => {
   }
 }
 
-// Cargar eventos al montar
+// Cargar eventos solo una vez al montar la página
 onMounted(() => loadEvents())
-
-// Recargar eventos si se vuelve visible la pestaña
-if (process.client) {
-  onMounted(() => {
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) loadEvents()
-    })
-  })
-}
 
 // Función para obtener la URL correcta de la imagen del teléfono
 const getPhoneImageUrl = () => {
