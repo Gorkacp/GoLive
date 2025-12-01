@@ -53,7 +53,8 @@ public class AuthService {
         var user = userService.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        return jwtService.generateToken(request.getEmail());
+        // Generar JWT incluyendo el rol actual del usuario (user, admin, super_user, ...)
+        return jwtService.generateToken(request.getEmail(), user.getRole());
     }
 
     // Verificar SUPER_USER

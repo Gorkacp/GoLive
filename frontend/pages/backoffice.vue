@@ -1134,9 +1134,28 @@ onMounted(async () => {
     updateViewport()
     window.addEventListener('resize', updateViewport)
   }
+
+  // Si no hay datos en sessionStorage pero sí token válido, intentamos
+  // recuperarlos desde el backend en lugar de mandar directamente al login.
   if (!userData.value) {
-    return navigateTo('/login')
+    try {
+      const { getCurrentUser } = useAuth()
+      const current = await getCurrentUser()
+      userData.value = current
+
+      if (process.client) {
+        try {
+          sessionStorage.setItem('user', JSON.stringify(current))
+        } catch (e) {
+          console.error('No se pudo guardar el usuario en sessionStorage:', e)
+        }
+      }
+    } catch (error) {
+      // Si el token es inválido o ha expirado, entonces sí mandamos al login
+      return navigateTo('/login')
+    }
   }
+
   await refreshData()
 })
 

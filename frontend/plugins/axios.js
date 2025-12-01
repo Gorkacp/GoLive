@@ -25,11 +25,12 @@ export default defineNuxtPlugin((nuxtApp) => {
         const token = authCookie.value
         
         if (token) {
+          // Si el token está expirado, cerramos sesión y evitamos la petición
           if (isTokenExpired(token)) {
             logoutUser()
             return Promise.reject(new Error('Token expirado'))
           }
-          
+
           config.headers.Authorization = `Bearer ${token}`
         }
       }
@@ -64,11 +65,26 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   const isTokenExpired = (token) => {
     try {
+      // Compatibilidad: los tokens antiguos dummy nunca se consideran expirados
       if (token.startsWith('dummy-token-')) {
         return false
       }
-      return false
+
+      // Para JWT reales: decodificar payload y comprobar 'exp'
+      const parts = token.split('.')
+      if (parts.length !== 3) {
+        return false
+      }
+
+      const payload = JSON.parse(atob(parts[1]))
+      if (!payload.exp) {
+        return false
+      }
+
+      const nowInSeconds = Math.floor(Date.now() / 1000)
+      return payload.exp < nowInSeconds
     } catch (error) {
+      // Si algo falla al decodificar, por seguridad consideramos expirado
       return true
     }
   }

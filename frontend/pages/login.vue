@@ -276,8 +276,17 @@ const loginUser = async () => {
     if (response.token) {
       // Guardar token usando el composable useAuth (se persiste en cookie)
       setToken(response.token)
+
+      // Guardar también los datos de usuario en sessionStorage para middleware de roles
+      if (process.client) {
+        try {
+          sessionStorage.setItem('user', JSON.stringify(response))
+        } catch (e) {
+          console.error('No se pudo guardar el usuario en sessionStorage:', e)
+        }
+      }
       
-      // Redirigir según el rol del usuario
+      // Redirigir según el rol del usuario (se mantiene la lógica existente)
       if (response.role === 'ADMIN') {
         navigateTo('/oficina')
       } else {
