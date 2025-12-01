@@ -48,7 +48,8 @@ public class AuthController {
                 user.getPhoneNumber(),
                 user.getDateOfBirth(),
                 user.getPostalCode(),
-                user.getProfilePhoto()
+                user.getProfilePhoto(),
+                user.isPushNotificationsEnabled()
             );
             
             return ResponseEntity.ok(response);
@@ -74,7 +75,8 @@ public class AuthController {
                 user.getPhoneNumber(),
                 user.getDateOfBirth(),
                 user.getPostalCode(),
-                user.getProfilePhoto()
+                user.getProfilePhoto(),
+                user.isPushNotificationsEnabled()
             );
             
             return ResponseEntity.ok(response);
@@ -229,6 +231,37 @@ public class AuthController {
             System.err.println("Error en getCurrentUser: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(401).body(Map.of("error", "Token inválido o expirado", "details", e.getMessage()));
+        }
+    }
+
+    // PATCH: Preferencias de notificaciones push
+    @PatchMapping("/users/{id}/preferences")
+    public ResponseEntity<?> updateUserPreferences(@PathVariable String id,
+                                                  @RequestBody Map<String, Object> body,
+                                                  @RequestHeader("Authorization") String token) {
+        try {
+            if (!authService.hasUserAccess(token, id)) {
+                return ResponseEntity.status(403).body("Acceso denegado");
+            }
+
+            Optional<User> existingUser = userService.findUserById(id);
+            if (existingUser.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            User user = existingUser.get();
+
+            if (body.containsKey("pushNotificationsEnabled")) {
+                Object value = body.get("pushNotificationsEnabled");
+                if (value instanceof Boolean) {
+                    user.setPushNotificationsEnabled((Boolean) value);
+                }
+            }
+
+            User updatedUser = userService.save(user);
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al actualizar preferencias: " + e.getMessage());
         }
     }
 

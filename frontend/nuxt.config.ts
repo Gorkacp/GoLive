@@ -44,7 +44,8 @@ export default defineNuxtConfig({
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8085',
       paypalClientId: process.env.NUXT_PUBLIC_PAYPAL_CLIENT_ID,
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL,
-      appName: process.env.NUXT_PUBLIC_APP_NAME
+      appName: process.env.NUXT_PUBLIC_APP_NAME,
+      pushPublicKey: process.env.VAPID_PUBLIC_KEY
     }
   },
 

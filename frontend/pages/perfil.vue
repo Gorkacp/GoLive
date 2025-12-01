@@ -298,11 +298,32 @@
           </div>
         </div>
 
-        <!-- TAB: CUENTA -->
         <div v-show="activeTab === 'cuenta'" class="tab-pane">
           <div class="form-section">
             <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e5e7eb;">
               <h2 style="margin: 0;">Gestión de cuenta</h2>
+            </div>
+
+            <!-- Ajuste de notificaciones -->
+            <div class="security-card" style="margin-bottom: 24px;">
+              <div class="security-item">
+                <div class="security-info">
+                  <h3>Notificaciones en tu móvil</h3>
+                  <p>Recibe avisos en tu teléfono cuando compres entradas y cuando se acerque la fecha de tus eventos. Solo disponible en móviles/PWA.</p>
+                </div>
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    :checked="notificationsEnabled"
+                    @change="onToggleNotifications($event.target.checked)"
+                    :disabled="notificationsLoading"
+                  />
+                  <span class="slider round"></span>
+                </label>
+              </div>
+              <p v-if="notificationsMessage" class="notifications-hint">
+                {{ notificationsMessage }}
+              </p>
             </div>
 
             <div class="danger-card">
@@ -454,7 +475,7 @@
 </template>
 
 <script setup>
-import { useHead } from '#app'
+import { useHead, useRuntimeConfig } from '#app'
 
 useHead({
   title: 'Perfil | GoLive',
@@ -484,7 +505,10 @@ definePageMeta({
 })
 
 // ========== COMPOSABLES ==========
-const { getCurrentUser, updateProfile: updateUserProfile, uploadProfilePhoto, changePassword: changeUserPassword, deleteAccount: deleteUserAccount } = useAuth()
+const { getCurrentUser, updateProfile: updateUserProfile, uploadProfilePhoto, changePassword: changeUserPassword, deleteAccount: deleteUserAccount, getToken } = useAuth()
+const { registerPush, unsubscribePush, hasActiveSubscription, isMobileDevice } = usePushNotifications()
+const config = useRuntimeConfig()
+const apiBase = config.public.apiBase
 const activeTab = ref('datos')
 const editMode = ref(true)  // ✅ Cambiar a true para que siempre esté en modo edición
 const savingProfile = ref(false)
@@ -505,7 +529,8 @@ const userData = ref({
   dateOfBirth: '',
   postalCode: '',
   role: 'user',
-  id: ''
+  id: '',
+  pushNotificationsEnabled: false
 })
 
 const formData = ref({
@@ -522,6 +547,11 @@ const passwordForm = ref({
   newPassword: '',
   confirmPassword: ''
 })
+
+// Notificaciones push
+const notificationsEnabled = ref(false)
+const notificationsLoading = ref(false)
+const notificationsMessage = ref('')
 
 // Estado para mostrar/ocultar contraseñas
 const showCurrentPassword = ref(false)
@@ -545,6 +575,28 @@ onMounted(async () => {
   document.title = 'Mi perfil | GoLive'
   
   await loadUserData()
+
+  if (process.client) {
+    // Si el usuario tiene la preferencia activada en backend:
+    if (userData.value.pushNotificationsEnabled) {
+      // En móvil/PWA intentamos sincronizar con la suscripción real
+      if (isMobileDevice()) {
+        hasActiveSubscription()
+          .then((active) => {
+            // Si hay suscripción, ON; si no, mantenemos la preferencia visualmente ON igualmente
+            notificationsEnabled.value = active || true
+          })
+          .catch(() => {
+            notificationsEnabled.value = true
+          })
+      } else {
+        // En escritorio: simplemente respetamos la preferencia del backend
+        notificationsEnabled.value = true
+      }
+    } else {
+      notificationsEnabled.value = false
+    }
+  }
 })
 
 // ========== MÉTODOS DE CARGA ==========
@@ -562,7 +614,8 @@ const loadUserData = async () => {
         postalCode: user.postalCode || '',
         profilePhoto: user.profilePhoto || '',
         role: user.role || 'user',
-        id: user.id || ''
+        id: user.id || '',
+        pushNotificationsEnabled: user.pushNotificationsEnabled ?? false
       }
       formData.value = {
         name: userData.value.name,
@@ -572,6 +625,7 @@ const loadUserData = async () => {
         dateOfBirth: userData.value.dateOfBirth,
         postalCode: userData.value.postalCode
       }
+      notificationsEnabled.value = !!userData.value.pushNotificationsEnabled
     } else {
       console.warn('⚠️ No se encontraron datos del usuario')
     }
@@ -868,6 +922,93 @@ const deleteAccount = async () => {
     showDeletePassword.value = false
   } finally {
     deletingAccount.value = false
+  }
+}
+
+const onToggleNotifications = async (checked) => {
+  if (!process.client) return
+
+  notificationsLoading.value = true
+  notificationsMessage.value = ''
+
+  console.log('[perfil] Toggle notificaciones:', {
+    checked,
+    userId: userData.value.id
+  })
+
+  try {
+    const wantEnable = checked
+    notificationsEnabled.value = wantEnable
+
+    if (wantEnable) {
+      // Activar: pedimos permiso y registramos push (si el dispositivo lo permite)
+      try {
+        await registerPush()
+      } catch (e) {
+        console.error('[perfil] Error al registrar push', e)
+      }
+
+      // Intentamos comprobar si hay suscripción activa, solo para mostrar un mensaje informativo
+      let active = false
+      try {
+        active = await hasActiveSubscription()
+      } catch (e) {
+        console.error('[perfil] Error comprobando suscripción push', e)
+      }
+
+      // A nivel de preferencia, guardamos SIEMPRE lo que el usuario ha elegido (ON)
+      if (userData.value.id) {
+        const token = getToken()
+        console.log('[perfil] PATCH preferencias ON', {
+          userId: userData.value.id,
+          tokenPresent: !!token
+        })
+        await $fetch(`${apiBase}/api/auth/users/${userData.value.id}/preferences`, {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: {
+            pushNotificationsEnabled: true
+          }
+        })
+      }
+
+      // En la UI mantenemos el switch según la elección del usuario
+      notificationsEnabled.value = true
+      notificationsMessage.value = active
+        ? 'Notificaciones activadas en este dispositivo.'
+        : 'Preferencia de notificaciones guardada. Este dispositivo no ha podido activar las notificaciones, revisa permisos o usa la PWA en tu móvil.'
+    } else {
+      // Desactivar: cancelamos suscripción en este dispositivo
+      await unsubscribePush()
+      // Forzamos estado OFF en la UI (aunque el navegador mantenga el permiso)
+      notificationsEnabled.value = false
+      notificationsMessage.value = 'Notificaciones desactivadas en este dispositivo.'
+      if (userData.value.id) {
+        const token = getToken()
+        console.log('[perfil] PATCH preferencias OFF', {
+          userId: userData.value.id,
+          tokenPresent: !!token
+        })
+        await $fetch(`${apiBase}/api/auth/users/${userData.value.id}/preferences`, {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: {
+            pushNotificationsEnabled: false
+          }
+        })
+      }
+    }
+  } catch (error) {
+    console.error('Error gestionando notificaciones', error)
+    notificationsMessage.value = 'Ha ocurrido un error al actualizar tus notificaciones.'
+  } finally {
+    notificationsLoading.value = false
   }
 }
 </script>
@@ -1482,7 +1623,14 @@ const deleteAccount = async () => {
 }
 
 /* ========== TARJETAS ========== */
-.security-card,
+.security-card {
+  background: #f9fafb;
+  border: 2px solid var(--border-color);
+  border-radius: 16px;
+  padding: 24px 30px;
+  margin-bottom: 20px;
+}
+
 .danger-card {
   background: rgba(220, 38, 38, 0.08);
   border: 2px solid rgba(220, 38, 38, 0.3);
@@ -1641,6 +1789,73 @@ const deleteAccount = async () => {
   justify-content: space-between;
   align-items: center;
   gap: 20px;
+}
+
+/* Switch de notificaciones */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 56px;
+  height: 30px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #d1d5db;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  /* Mismo degradado que los botones principales (rosa → naranja) */
+  background: linear-gradient(135deg, #ff0057 0%, #ff6b35 100%);
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px var(--primary-color);
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+.notifications-hint {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-light);
 }
 
 .security-info h3,

@@ -40,6 +40,7 @@ public class PaymentService {
     private final UserService userService;
     private final AuthService authService;
     private final TicketEmailService ticketEmailService;
+    private final PushNotificationService pushNotificationService;
 
     @Value("${app.payments.service-fee-per-ticket:1.5}")
     private double serviceFeePerTicket;
@@ -108,6 +109,16 @@ public class PaymentService {
             ticketEmailService.sendTicketsEmail(user.getEmail(), user.getName(), ticketInfoList, eventImagePath);
         } catch (Exception e) {
             log.error("Error enviando email de entradas: {}", e.getMessage(), e);
+        }
+
+        try {
+            String title = "Compra confirmada: " + event.getTitle();
+            String body = "Tus entradas para " + event.getTitle() + " en " + event.getVenue() + " ya están disponibles.";
+            String icon = event.getImage();
+            String url = "/misEntradas";
+            pushNotificationService.sendNotificationToUser(user.getId(), title, body, icon, url);
+        } catch (Exception e) {
+            log.error("Error enviando notificación push de compra: {}", e.getMessage(), e);
         }
         return new PaymentResultResponse(savedTransaction, savedTickets);
     }

@@ -1349,6 +1349,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 32px;
+  max-width: 980px;
+  margin: 0 auto;
 }
 
 .content-header {

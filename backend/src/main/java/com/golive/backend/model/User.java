@@ -36,6 +36,9 @@ public class User implements UserDetails {
     // Foto de perfil (almacenada en Base64)
     private String profilePhoto;
 
+    // Preferencias de usuario
+    private boolean pushNotificationsEnabled = false;
+
     private LocalDateTime createdAt = LocalDateTime.now();
     private LocalDateTime updatedAt = LocalDateTime.now();
 
@@ -79,6 +82,9 @@ public class User implements UserDetails {
 
     public String getProfilePhoto() { return profilePhoto; }
     public void setProfilePhoto(String profilePhoto) { this.profilePhoto = profilePhoto; }
+
+    public boolean isPushNotificationsEnabled() { return pushNotificationsEnabled; }
+    public void setPushNotificationsEnabled(boolean pushNotificationsEnabled) { this.pushNotificationsEnabled = pushNotificationsEnabled; }
 
     @Override
     public String getPassword() { return password; }

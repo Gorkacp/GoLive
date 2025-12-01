@@ -221,6 +221,40 @@ export const useAuth = () => {
     }
   }
 
+  /**
+   * Actualiza preferencias del usuario (por ahora, notificaciones push)
+   */
+  const updatePreferences = async (userId, preferences) => {
+    try {
+      const token = getToken()
+
+      if (!token) {
+        throw new Error('No hay token disponible')
+      }
+
+      if (process.client) {
+        console.log('[updatePreferences] Enviando preferencias', {
+          userId,
+          preferences
+        })
+      }
+
+      const response = await $fetch(`${apiBase}/api/auth/users/${userId}/preferences`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: preferences
+      })
+
+      return response
+    } catch (error) {
+      console.error('Error al actualizar preferencias:', error)
+      throw error
+    }
+  }
+
   return {
     // Token management
     authToken,
@@ -234,6 +268,7 @@ export const useAuth = () => {
     updateProfile,
     uploadProfilePhoto,
     changePassword,
-    deleteAccount
+    deleteAccount,
+    updatePreferences
   }
 }

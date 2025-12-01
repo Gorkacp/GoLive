@@ -16,6 +16,7 @@ public class AuthResponse {
     private String dateOfBirth;
     private String postalCode;
     private String profilePhoto;
+    private boolean pushNotificationsEnabled;
     
     public AuthResponse(String token, String email, String name, String role) {
         this.token = token;
@@ -38,7 +39,7 @@ public class AuthResponse {
     }
 
     public AuthResponse(String token, String id, String email, String name, String lastName, 
-                       String role, String phoneNumber, String dateOfBirth, String postalCode, String profilePhoto) {
+                       String role, String phoneNumber, String dateOfBirth, String postalCode, String profilePhoto, boolean pushNotificationsEnabled) {
         this.token = token;
         this.id = id;
         this.email = email;
@@ -49,5 +50,6 @@ public class AuthResponse {
         this.dateOfBirth = dateOfBirth;
         this.postalCode = postalCode;
         this.profilePhoto = profilePhoto;
+        this.pushNotificationsEnabled = pushNotificationsEnabled;
     }
 }
