@@ -39,10 +39,6 @@ export const usePushNotifications = () => {
 
   const registerPush = async () => {
     if (!process.client) return
-    if (!isMobileDevice()) {
-      // Solo registramos notificaciones automáticas en móvil/PWA
-      return
-    }
     if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
       console.warn('Notificaciones push no soportadas en este navegador')
       return
@@ -84,10 +80,6 @@ export const usePushNotifications = () => {
 
   const hasActiveSubscription = async () => {
     if (!process.client) return false
-    // Solo consideramos suscripción activa en dispositivos móviles/PWA
-    if (!isMobileDevice()) {
-      return false
-    }
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       return false
     }
@@ -102,10 +94,6 @@ export const usePushNotifications = () => {
 
   const unsubscribePush = async () => {
     if (!process.client) return
-    // En escritorio no intentamos tocar service workers ni suscripciones
-    if (!isMobileDevice()) {
-      return
-    }
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       return
     }
