@@ -476,6 +476,46 @@ const initializeAttendees = () => {
   })
 }
 
+// Prefill: rellenar SOLO el primer asistente con los datos del usuario logueado
+const prefillFirstAttendeeFromUser = () => {
+  if (!currentUser.value || !attendees.value.length) return
+
+  const user = currentUser.value
+  const first = attendees.value[0]
+
+  // Solo rellenar campos vacíos para no pisar nada que el usuario ya haya escrito
+  if (!first.fullName) {
+    const fullName = [user.name, user.lastName].filter(Boolean).join(' ').trim()
+    first.fullName = fullName || ''
+  }
+
+  if (!first.email && user.email) {
+    first.email = user.email
+  }
+
+  if (!first.phone && (user.phoneNumber || user.phone)) {
+    first.phone = user.phoneNumber || user.phone
+  }
+
+  if (!first.postalCode && user.postalCode) {
+    first.postalCode = user.postalCode
+  }
+
+  // Intentar mapear fecha de nacimiento si viene como Date/string ISO
+  if (!first.birthDay && !first.birthMonth && !first.birthYear && user.dateOfBirth) {
+    try {
+      const d = new Date(user.dateOfBirth)
+      if (!isNaN(d.getTime())) {
+        first.birthDay = d.getDate()
+        first.birthMonth = d.getMonth() + 1
+        first.birthYear = d.getFullYear()
+      }
+    } catch (e) {
+      // Si falla el parseo, simplemente no rellenamos la fecha
+    }
+  }
+}
+
 // Calcular totales
 const subtotal = computed(() => {
   return tickets.value.reduce((sum, t) => sum + t.price * t.quantity, 0)
@@ -744,6 +784,9 @@ const loadOrder = async () => {
       fees.value = Number(order.fees) || 0
 
       initializeAttendees()
+
+      // Si el usuario está logueado, pre-rellenar solo el primer asistente
+      prefillFirstAttendeeFromUser()
 
       // SEO específico de la página de pago para este evento
       const slug = route.params.slug
