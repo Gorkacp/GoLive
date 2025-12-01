@@ -45,7 +45,9 @@ export default defineNuxtConfig({
       paypalClientId: process.env.NUXT_PUBLIC_PAYPAL_CLIENT_ID,
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL,
       appName: process.env.NUXT_PUBLIC_APP_NAME,
-      pushPublicKey: process.env.VAPID_PUBLIC_KEY
+      // Clave pública VAPID para notificaciones push (expuesta al cliente)
+      // Prioriza la variable pública estándar de Nuxt y, como fallback, VAPID_PUBLIC_KEY
+      pushPublicKey: process.env.NUXT_PUBLIC_PUSH_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY
     }
   },
 
