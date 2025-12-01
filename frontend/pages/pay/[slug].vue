@@ -745,14 +745,61 @@ const loadOrder = async () => {
 
       initializeAttendees()
 
+      // SEO específico de la página de pago para este evento
+      const slug = route.params.slug
       useHead({
         title: `Pago - ${event.value.title} | GoLive`,
         meta: [
-          { name: 'description', content: `Compra tus entradas para ${event.value.title} de forma segura con GoLive.` },
-          { property: 'og:title', content: `Pago - ${event.value.title} | GoLive` },
-          { property: 'og:description', content: `Compra tus entradas para ${event.value.title} de forma segura con GoLive.` },
-          { property: 'og:image', content: event.value.image || '/default-event.jpg' },
-          { property: 'og:type', content: 'website' }
+          {
+            name: 'description',
+            content: `Completa el pago de tus entradas para ${event.value.title} en ${event.value.venue} de forma segura con GoLive.`
+          },
+          {
+            name: 'keywords',
+            content: `pago entradas, checkout, ${event.value.title}, entradas ${event.value.venue}, GoLive`
+          },
+          {
+            property: 'og:title',
+            content: `Pago - ${event.value.title} | GoLive`
+          },
+          {
+            property: 'og:description',
+            content: `Finaliza la compra de tus entradas para ${event.value.title}. Pago seguro y entradas digitales.`
+          },
+          {
+            property: 'og:image',
+            content: event.value.image || '/default-event.jpg'
+          },
+          {
+            property: 'og:type',
+            content: 'website'
+          },
+          {
+            property: 'og:url',
+            content: `https://golive.com/pay/${slug}`
+          },
+          {
+            name: 'twitter:card',
+            content: 'summary_large_image'
+          },
+          {
+            name: 'twitter:title',
+            content: `Pago - ${event.value.title} | GoLive`
+          },
+          {
+            name: 'twitter:description',
+            content: `Completa tu compra para ${event.value.title} con GoLive.`
+          },
+          {
+            name: 'twitter:image',
+            content: event.value.image || '/default-event.jpg'
+          }
+        ],
+        link: [
+          {
+            rel: 'canonical',
+            href: `https://golive.com/pay/${slug}`
+          }
         ]
       })
     } else {
