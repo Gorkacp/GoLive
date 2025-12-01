@@ -12,10 +12,14 @@ import com.golive.backend.services.EventService;
 import com.golive.backend.services.TicketService;
 import com.golive.backend.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -100,6 +104,56 @@ public class TicketController {
         }
     }
 
+    /**
+     * Exporta los asistentes de un evento a CSV para su descarga desde el backoffice.
+     * Solo SUPER_USER o el creador del evento pueden acceder.
+     */
+    @GetMapping(value = "/events/{eventId}/export", produces = "text/csv")
+    public ResponseEntity<?> exportEventAttendeesCsv(@PathVariable String eventId,
+                                                     @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+        try {
+            if (authorizationHeader == null || authorizationHeader.isBlank()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("Autenticación requerida");
+            }
+
+            var requesterOpt = authService.getUserFromToken(authorizationHeader);
+            if (requesterOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("Token inválido");
+            }
+            User requester = requesterOpt.get();
+            boolean isSuper = "super_user".equalsIgnoreCase(requester.getRole());
+
+            Optional<Event> eventOpt = eventService.getEventById(eventId);
+            if (eventOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Evento no encontrado");
+            }
+            Event event = eventOpt.get();
+
+            if (!isSuper) {
+                if (event.getCreatedBy() == null || !event.getCreatedBy().equals(requester.getId())) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body("No tienes permisos para exportar los asistentes de este evento");
+                }
+            }
+
+            List<Ticket> tickets = ticketService.getTicketsByEventId(eventId);
+
+            String csv = buildAttendeesCsv(event, tickets);
+
+            String filename = "asistentes_" + eventId + ".csv";
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                    .body(csv);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("No se pudo exportar el CSV: " + ex.getMessage());
+        }
+    }
+
     private EventAttendeesResponse buildAttendeesResponse(Event event, List<Ticket> tickets) {
         EventAttendeesResponse response = new EventAttendeesResponse();
         response.setEventId(event.getId());
@@ -136,6 +190,67 @@ public class TicketController {
                 .sum();
         response.setGrossRevenue(Math.round(gross * 100.0) / 100.0);
         return response;
+    }
+
+    /**
+     * Construye un CSV sencillo con los asistentes del evento.
+     */
+    private String buildAttendeesCsv(Event event, List<Ticket> tickets) {
+        StringBuilder sb = new StringBuilder();
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+
+        // Cabecera
+        sb.append("Evento;Zona;TicketId;TicketNumber;Nombre;Email;Precio;Comision;Seguro;Estado;Emitido\n");
+
+        for (Ticket ticket : tickets) {
+            String zone = ticket.getZoneName() != null ? ticket.getZoneName() : "";
+            String ticketId = ticket.getId() != null ? ticket.getId() : "";
+            String ticketNumber = ticket.getTicketNumber() != null ? ticket.getTicketNumber() : "";
+
+            String attendeeName;
+            String attendeeEmail;
+            if (ticket.getAttendee() != null) {
+                attendeeName = ticket.getAttendee().getFullName();
+                attendeeEmail = ticket.getAttendee().getEmail();
+            } else {
+                attendeeName = ticket.getUserEmail();
+                attendeeEmail = ticket.getUserEmail();
+            }
+            if (attendeeName == null) attendeeName = "";
+            if (attendeeEmail == null) attendeeEmail = "";
+
+            double price = ticket.getPrice();
+            double serviceFee = ticket.getServiceFee();
+            boolean insurance = ticket.isInsurance();
+            String status = ticket.getStatus() != null ? ticket.getStatus() : "";
+            String issuedAt = ticket.getIssuedAt() != null ? df.format(ticket.getIssuedAt()) : "";
+
+            sb.append(escapeCsv(event.getTitle())).append(';')
+                    .append(escapeCsv(zone)).append(';')
+                    .append(escapeCsv(ticketId)).append(';')
+                    .append(escapeCsv(ticketNumber)).append(';')
+                    .append(escapeCsv(attendeeName)).append(';')
+                    .append(escapeCsv(attendeeEmail)).append(';')
+                    .append(price).append(';')
+                    .append(serviceFee).append(';')
+                    .append(insurance ? "1" : "0").append(';')
+                    .append(escapeCsv(status)).append(';')
+                    .append(escapeCsv(issuedAt))
+                    .append('\n');
+        }
+
+        return sb.toString();
+    }
+
+    private String escapeCsv(String value) {
+        if (value == null) {
+            return "";
+        }
+        String v = value.replace("\"", "\"\"");
+        if (v.contains(";") || v.contains("\"") || v.contains("\n") || v.contains("\r")) {
+            return "\"" + v + "\"";
+        }
+        return v;
     }
 }
 

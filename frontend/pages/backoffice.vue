@@ -379,9 +379,20 @@
       <div class="modal-container">
         <div class="modal-header">
           <h2>Asistentes del Evento</h2>
-          <button class="modal-close" @click="closeAttendeesModal">
-            <i class="fas fa-times"></i>
-          </button>
+          <div class="modal-actions">
+            <button 
+              v-if="selectedEventForModal" 
+              class="btn-outline small me-2" 
+              type="button" 
+              @click="exportAttendeesCsv"
+            >
+              <i class="fas fa-file-csv me-1"></i>
+              Exportar CSV
+            </button>
+            <button class="modal-close" @click="closeAttendeesModal">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
         </div>
         <div class="modal-body">
           <div v-if="modalAttendeesLoading" class="modal-loading">
@@ -756,6 +767,51 @@ const viewEventAttendees = async (event) => {
     modalAttendeesError.value = error?.data?.error || error?.message || 'No se pudieron cargar los asistentes'
   } finally {
     modalAttendeesLoading.value = false
+  }
+}
+
+const exportAttendeesCsv = async () => {
+  if (!selectedEventForModal.value?.id) return
+
+  try {
+    const config = useRuntimeConfig()
+    const { getToken } = useAuth()
+    const token = getToken()
+    if (!token) {
+      throw new Error('No hay token de autenticación')
+    }
+
+    const apiBase = config.public.apiBase?.replace(/\/+$/, '') || ''
+    const eventId = selectedEventForModal.value.id
+
+    const response = await fetch(`${apiBase}/api/tickets/events/${eventId}/export`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(text || 'No se pudo exportar el CSV')
+    }
+
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    const safeTitle = (selectedEventForModal.value.title || 'asistentes')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/gi, '-')
+      .replace(/(^-|-$)/g, '')
+    link.download = `asistentes-${safeTitle || 'evento'}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Error exportando CSV de asistentes:', error)
+    modalAttendeesError.value = error?.message || 'No se pudo exportar el CSV de asistentes'
   }
 }
 
@@ -2573,6 +2629,13 @@ onUnmounted(() => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
 }
 
 .modal-close {
