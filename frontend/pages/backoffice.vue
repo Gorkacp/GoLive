@@ -382,12 +382,12 @@
           <div class="modal-actions">
             <button 
               v-if="selectedEventForModal" 
-              class="btn-outline small me-2" 
+              class="btn-outline small export-csv-btn" 
               type="button" 
               @click="exportAttendeesCsv"
             >
               <i class="fas fa-file-csv me-1"></i>
-              Exportar CSV
+              <span class="btn-text-label">Exportar CSV</span>
             </button>
             <button class="modal-close" @click="closeAttendeesModal">
               <i class="fas fa-times"></i>
@@ -2414,15 +2414,17 @@ onUnmounted(() => {
   }
   
   .modal-header {
-    padding: 20px;
+    padding: 16px 18px;
+    align-items: flex-start;
+    gap: 12px;
   }
   
   .modal-header h2 {
-    font-size: 1.25rem;
+    font-size: 1.15rem;
   }
   
   .modal-body {
-    padding: 20px;
+    padding: 16px 18px;
   }
   
   /* Ocultar tabla en móvil, mostrar tarjetas */
@@ -2638,6 +2640,12 @@ onUnmounted(() => {
   margin-left: auto;
 }
 
+.export-csv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .modal-close {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2650,6 +2658,26 @@ onUnmounted(() => {
   color: #fff;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .modal-actions {
+    gap: 8px;
+  }
+
+  .export-csv-btn {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  .export-csv-btn .btn-text-label {
+    display: none;
+  }
+
+  .modal-close {
+    width: 32px;
+    height: 32px;
+  }
 }
 
 .modal-close:hover {
