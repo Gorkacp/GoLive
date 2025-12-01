@@ -1,11 +1,12 @@
-const CACHE_VERSION = 'v4'
+const CACHE_VERSION = 'v6'
 const CACHE_NAME = `golive-cache-${CACHE_VERSION}`
 const APP_SHELL = ['/', '/index.html']
 const NUXT_INTERNAL_PREFIX = '/_nuxt/'
 
-// Rutas que NO deben ser cacheadas (dinámicas)
 const DYNAMIC_ROUTES = [
   '/api/',
+  '/events',
+  '/dashboard',
   '/reset-password',
   '/login',
   '/register',
