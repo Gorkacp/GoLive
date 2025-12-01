@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v3'
+const CACHE_VERSION = 'v4'
 const CACHE_NAME = `golive-cache-${CACHE_VERSION}`
 const APP_SHELL = ['/', '/index.html']
 const NUXT_INTERNAL_PREFIX = '/_nuxt/'
@@ -25,18 +25,27 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    Promise.all([
-      clients.claim(),
-      caches.keys().then((keys) =>
-        Promise.all(
-          keys.map((key) => {
-            if (key !== CACHE_NAME) {
-              return caches.delete(key)
-            }
-          })
-        )
+    (async () => {
+      // Tomar control de los clientes y limpiar cachés antiguas
+      await clients.claim()
+
+      const keys = await caches.keys()
+      await Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key)
+          }
+        })
       )
-    ])
+
+      // Forzar recarga de todas las pestañas controladas por el nuevo SW
+      const allClients = await clients.matchAll({ type: 'window', includeUncontrolled: true })
+      allClients.forEach((client) => {
+        if ('navigate' in client) {
+          client.navigate(client.url)
+        }
+      })
+    })()
   )
 })
 
