@@ -274,34 +274,8 @@ const loginUser = async () => {
       headers: { 'Content-Type': 'application/json' }
     })
     if (response.token) {
-      // Construir objeto usuario desde la respuesta
-      const user = {
-        id: response.id,
-        email: response.email,
-        name: response.name,
-        lastName: response.lastName,
-        role: response.role,
-        phoneNumber: response.phoneNumber,
-        dateOfBirth: response.dateOfBirth,
-        postalCode: response.postalCode,
-        profilePhoto: response.profilePhoto
-      }
-      
-      // Guardar token usando el composable useAuth
+      // Guardar token usando el composable useAuth (se persiste en cookie)
       setToken(response.token)
-      
-      // Guardar datos en sessionStorage para uso en cliente
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('user', JSON.stringify(user))
-        
-        if (remember.value) {
-          localStorage.setItem('rememberedEmail', email.value)
-          localStorage.setItem('rememberedPassword', password.value)
-        } else {
-          localStorage.removeItem('rememberedEmail')
-          localStorage.removeItem('rememberedPassword')
-        }
-      }
       
       // Redirigir según el rol del usuario
       if (response.role === 'ADMIN') {
@@ -390,17 +364,6 @@ const resetPassword = async (token, newPassword) => {
     alert(err.data?.message || 'Error al restablecer la contraseña.')
   }
 }
-
-// Recordar usuario
-onMounted(() => {
-  const savedEmail = localStorage.getItem('rememberedEmail')
-  const savedPassword = localStorage.getItem('rememberedPassword')
-  if (savedEmail && savedPassword) {
-    email.value = savedEmail
-    password.value = savedPassword
-    remember.value = true
-  }
-})
 
 // Limpiar errores al escribir
 watch(email, () => { 

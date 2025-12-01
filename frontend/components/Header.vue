@@ -94,7 +94,7 @@ const route = useRoute()
 const userLogged = ref(false)
 const userRole = ref(null)
 const userData = ref(null)
-const { isAuthenticated, clearToken } = useAuth()
+const { isAuthenticated, clearToken, getCurrentUser } = useAuth()
 
 const getRoleBadgeClass = (role) => {
   switch (role) {
@@ -104,31 +104,34 @@ const getRoleBadgeClass = (role) => {
   }
 }
 
-const loadUserFromStorage = () => {
-  if (process.client) {
-    const userStr = sessionStorage.getItem('user')
-    
-    if (userStr) {
-      try {
-        userData.value = JSON.parse(userStr)
-        userLogged.value = true
-        userRole.value = userData.value.role
-      } catch (error) {
-        logout()
-      }
-    } else {
+const loadUserFromAuth = async () => {
+  if (!process.client) {
+    return
+  }
+
+  try {
+    if (!isAuthenticated.value) {
       userLogged.value = false
       userRole.value = null
       userData.value = null
+      return
     }
+
+    const user = await getCurrentUser()
+    userData.value = user
+    userLogged.value = true
+    userRole.value = user?.role || null
+  } catch {
+    clearToken()
+    userLogged.value = false
+    userRole.value = null
+    userData.value = null
   }
 }
 
 onMounted(() => {
-  loadUserFromStorage()
+  loadUserFromAuth()
   if (process.client) {
-    window.addEventListener('storage', loadUserFromStorage)
-    
     // Permitir scroll dentro del offcanvas pero no en el body
     const offcanvasElement = document.getElementById('offcanvasNavbar')
     if (offcanvasElement) {
@@ -146,7 +149,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (process.client) {
-    window.removeEventListener('storage', loadUserFromStorage)
     // Limpiar estilos cuando se desmonta el componente
     document.documentElement.style.overflow = ''
     document.body.style.overflow = ''
@@ -154,7 +156,7 @@ onUnmounted(() => {
 })
 
 watch(() => route.path, () => {
-  loadUserFromStorage()
+  loadUserFromAuth()
   // Limpiar estilos de overflow al cambiar de ruta y cerrar offcanvas
   if (process.client) {
     document.documentElement.style.overflow = ''
@@ -173,7 +175,6 @@ watch(() => route.path, () => {
 const logout = () => {
   if (process.client) {
     clearToken()
-    sessionStorage.removeItem('user')
     userLogged.value = false
     userRole.value = null
     userData.value = null
