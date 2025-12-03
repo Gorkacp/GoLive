@@ -101,19 +101,6 @@
                       <span v-if="errors[0]?.email" class="error-message">{{ errors[0].email }}</span>
                     </div>
 
-                    <!-- Teléfono -->
-                    <div class="form-group">
-                      <label class="form-label">{{ $t('Teléfono') }} <span class="required">*</span></label>
-                      <input
-                        type="tel"
-                        class="form-input"
-                        v-model="attendees[0].phone"
-                        :class="{ 'is-invalid': errors[0]?.phone }"
-                        :placeholder="$t('Número de teléfono')"
-                      />
-                      <span v-if="errors[0]?.phone" class="error-message">{{ errors[0].phone }}</span>
-                    </div>
-
                     <!-- Fecha de nacimiento -->
                     <div class="form-group full-width">
                       <label class="form-label">{{ $t('Fecha de nacimiento') }} <span class="required">*</span></label>
@@ -230,19 +217,6 @@
                         :placeholder="$t('Correo electrónico')"
                       />
                       <span v-if="errors[index]?.email" class="error-message">{{ errors[index].email }}</span>
-                    </div>
-
-                    <!-- Teléfono -->
-                    <div class="form-group">
-                      <label class="form-label">{{ $t('Teléfono') }} <span class="required">*</span></label>
-                      <input
-                        type="tel"
-                        class="form-input"
-                        v-model="attendees[index].phone"
-                        :class="{ 'is-invalid': errors[index]?.phone }"
-                        :placeholder="$t('Número de teléfono')"
-                      />
-                      <span v-if="errors[index]?.phone" class="error-message">{{ errors[index].phone }}</span>
                     </div>
 
                     <!-- Fecha de nacimiento -->
@@ -460,7 +434,6 @@ const initializeAttendees = () => {
       attendees.value.push({
         fullName: '',
         email: '',
-        phone: '',
         birthDay: '',
         birthMonth: '',
         birthYear: '',
@@ -491,10 +464,6 @@ const prefillFirstAttendeeFromUser = () => {
 
   if (!first.email && user.email) {
     first.email = user.email
-  }
-
-  if (!first.phone && (user.phoneNumber || user.phone)) {
-    first.phone = user.phoneNumber || user.phone
   }
 
   if (!first.postalCode && user.postalCode) {
@@ -551,7 +520,6 @@ const validateAttendee = (index) => {
   const attendeeErrors = {
     fullName: '',
     email: '',
-    phone: '',
     birthDay: '',
     birthMonth: '',
     birthYear: '',
@@ -573,13 +541,6 @@ const validateAttendee = (index) => {
     attendeeErrors.email = 'El correo es obligatorio.'
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(attendee.email.trim())) {
     attendeeErrors.email = 'El correo debe ser válido (ej: usuario@correo.com).'
-  }
-
-  // Validar teléfono
-  if (!attendee.phone?.trim()) {
-    attendeeErrors.phone = 'El teléfono es obligatorio.'
-  } else if (!/^\d{9,}$/.test(attendee.phone.replace(/\s/g, ''))) {
-    attendeeErrors.phone = 'El teléfono debe tener al menos 9 dígitos.'
   }
 
   // Validar fecha de nacimiento
@@ -668,8 +629,85 @@ const payWithPaypal = () => {
   return true
 }
 
+// Procesar errores del backend y mostrarlos en los campos correspondientes
+const processBackendErrors = (errorResponse) => {
+  // Limpiar errores previos
+  errors.value = attendees.value.map(() => ({}))
+  
+  // Si hay errores de validación estructurados
+  if (errorResponse?.errors && typeof errorResponse.errors === 'object') {
+    // Los errores pueden venir como un objeto con arrays de mensajes por campo
+    // o como un mensaje simple
+    const errorFields = Object.keys(errorResponse.errors)
+    
+    // Intentar mapear errores a campos de asistentes
+    errorFields.forEach(field => {
+      const errorMessages = Array.isArray(errorResponse.errors[field]) 
+        ? errorResponse.errors[field] 
+        : [errorResponse.errors[field]]
+      
+      // Buscar el campo en todos los asistentes
+      attendees.value.forEach((attendee, index) => {
+        const fieldMap = {
+          'fullName': 'fullName',
+          'email': 'email',
+          'birthDay': 'birthDay',
+          'birthMonth': 'birthMonth',
+          'birthYear': 'birthYear',
+          'idType': 'idType',
+          'idNumber': 'idNumber',
+          'postalCode': 'postalCode',
+          'country': 'country'
+        }
+        
+        const mappedField = fieldMap[field]
+        if (mappedField && !errors.value[index][mappedField]) {
+          errors.value[index][mappedField] = errorMessages[0]
+        }
+      })
+    })
+  }
+  
+  // Si hay un mensaje de error general, mostrarlo también
+  if (errorResponse?.error || errorResponse?.message) {
+    const generalError = errorResponse.error || errorResponse.message
+    // Si el error menciona un campo específico, intentar asignarlo
+    const fieldPatterns = {
+      'nombre': 'fullName',
+      'email': 'email',
+      'fecha': 'birthDay',
+      'documento': 'idNumber',
+      'código postal': 'postalCode',
+      'postal': 'postalCode',
+      'país': 'country',
+      'country': 'country'
+    }
+    
+    let errorAssigned = false
+    for (const [pattern, field] of Object.entries(fieldPatterns)) {
+      if (generalError.toLowerCase().includes(pattern.toLowerCase())) {
+        // Asignar el error al primer asistente con ese campo vacío o incorrecto
+        for (let i = 0; i < attendees.value.length; i++) {
+          if (!errors.value[i][field]) {
+            errors.value[i][field] = generalError
+            errorAssigned = true
+            break
+          }
+        }
+        if (errorAssigned) break
+      }
+    }
+    
+    // Si no se pudo asignar a un campo específico, mostrar como error general
+    if (!errorAssigned) {
+      error.value = generalError
+    }
+  }
+}
+
 const persistPayment = async (details) => {
   const capture = details?.purchase_units?.[0]?.payments?.captures?.[0]
+  
   const payload = {
     providerOrderId: details?.id,
     providerCaptureId: capture?.id,
@@ -698,7 +736,6 @@ const persistPayment = async (details) => {
     attendees: attendees.value.map(att => ({
       fullName: att.fullName,
       email: att.email,
-      phone: att.phone,
       birthDay: att.birthDay,
       birthMonth: att.birthMonth,
       birthYear: att.birthYear,
@@ -737,8 +774,27 @@ const persistPayment = async (details) => {
     }
     router.push('/misEntradas?purchase=success')
   } catch (err) {
-    const apiError = err?.response?.data?.error || err?.message || 'No se pudo registrar el pago. Intenta nuevamente.'
-    error.value = apiError
+    // Procesar errores del backend
+    const errorData = err?.response?._data || err?.response?.data || {}
+    processBackendErrors(errorData)
+    
+    // Si hay un error general que no se pudo asignar a un campo
+    if (!error.value && (errorData?.error || errorData?.message || err?.message)) {
+      error.value = errorData.error || errorData.message || err.message || 'No se pudo registrar el pago. Intenta nuevamente.'
+    }
+    
+    // Scroll al primer error
+    const firstErrorIndex = errors.value.findIndex(e => Object.values(e).some(err => err))
+    if (firstErrorIndex !== -1) {
+      await nextTick()
+      const formCard = document.querySelectorAll('.form-card')[firstErrorIndex]
+      if (formCard) {
+        formCard.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    } else if (error.value) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+    
     throw err
   } finally {
     processingPayment.value = false
@@ -961,8 +1017,12 @@ const renderPaypalButton = () => {
             description: `${event.value.title || 'Evento'} - ${totalQuantity.value} ${totalQuantity.value === 1 ? 'entrada' : 'entradas'}`
           }
         ]
-      }).catch(() => {
-        error.value = 'No se pudo iniciar el pago. Intenta nuevamente.'
+      }).catch((err) => {
+        // Solo mostrar error genérico si no hay errores de validación visibles
+        const hasValidationErrors = errors.value.some(e => Object.values(e).some(err => err))
+        if (!hasValidationErrors) {
+          error.value = 'No se pudo iniciar el pago. Intenta nuevamente.'
+        }
         return actions.reject()
       })
     },
@@ -977,21 +1037,41 @@ const renderPaypalButton = () => {
         if (details.status === 'COMPLETED') {
           try {
             await persistPayment(details)
-          } catch {
-            window.scrollTo({ top: 0, behavior: 'smooth' })
+          } catch (err) {
+            // Los errores ya se procesan en persistPayment, solo hacer scroll si es necesario
+            // El scroll ya se maneja en persistPayment
           }
         }
-      }).catch(() => {
-        error.value = 'No se pudo completar el pago. Intenta nuevamente.'
-        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }).catch((err) => {
+        // Solo mostrar error genérico si no hay errores de validación visibles
+        const hasValidationErrors = errors.value.some(e => Object.values(e).some(err => err))
+        if (!hasValidationErrors) {
+          error.value = 'No se pudo completar el pago. Intenta nuevamente.'
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+        }
       })
     },
     onError: (err) => {
-      error.value = 'Se produjo un error al inicializar el pago. Intenta nuevamente.'
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      })
+      // Si hay errores de validación, no mostrar mensaje genérico
+      const hasValidationErrors = errors.value.some(e => Object.values(e).some(err => err))
+      if (!hasValidationErrors) {
+        error.value = 'Se produjo un error al inicializar el pago. Intenta nuevamente.'
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        })
+      } else {
+        // Scroll al primer error de validación
+        const firstErrorIndex = errors.value.findIndex(e => Object.values(e).some(err => err))
+        if (firstErrorIndex !== -1) {
+          nextTick(() => {
+            const formCard = document.querySelectorAll('.form-card')[firstErrorIndex]
+            if (formCard) {
+              formCard.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }
+          })
+        }
+      }
     },
     onCancel: () => {}
   }).render('#paypal-button-container')
