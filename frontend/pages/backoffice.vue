@@ -4,6 +4,14 @@
       <Header />
     </ClientOnly>
 
+    <!-- Loading State - Toda la página -->
+    <div v-if="loading" class="loading-fullscreen">
+      <div class="spinner-border" role="status"></div>
+      <p class="mt-3">Cargando panel...</p>
+    </div>
+
+    <!-- Content - Solo muestra cuando termina de cargar -->
+    <template v-else>
     <button
       v-if="!isDesktop"
       type="button"
@@ -513,6 +521,7 @@
         </div>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -547,6 +556,7 @@ useHead({
 })
 
 const fallbackImage = '/logo.svg'
+const loading = ref(true)
 const activeSection = ref('dashboard')
 const loadingDashboard = ref(false)
 const saving = ref(false)
@@ -1185,6 +1195,7 @@ const confirmDeletion = async (eventId) => {
 }
 
 onMounted(async () => {
+  loading.value = true
   loadUser()
   if (process.client) {
     updateViewport()
@@ -1208,11 +1219,13 @@ onMounted(async () => {
       }
     } catch (error) {
       // Si el token es inválido o ha expirado, entonces sí mandamos al login
+      loading.value = false
       return navigateTo('/login')
     }
   }
 
   await refreshData()
+  loading.value = false
 })
 
 onUnmounted(() => {
@@ -2988,6 +3001,46 @@ onUnmounted(() => {
 .form-input[type="time"]::-moz-calendar-picker-indicator:hover {
   opacity: 1;
   filter: invert(1) brightness(1);
+}
+
+/* ============ Loading Fullscreen ============ */
+.loading-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(5px);
+}
+
+.loading-fullscreen .spinner-border {
+  width: 60px;
+  height: 60px;
+  border-width: 4px;
+  color: rgba(255, 255, 255, 0.2);
+  border-right-color: #ff0057;
+  animation: spin 0.8s linear infinite;
+  border-radius: 50%;
+  border-style: solid;
+}
+
+.loading-fullscreen p {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+  color: #ffffff;
+  margin-top: 20px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>
 

@@ -17,11 +17,8 @@
             <!-- Información del usuario -->
             <div class="user-info-card mb-4">
               <div class="d-flex align-items-center gap-3">
-                <div v-if="currentUser.profilePhoto" class="avatar-image">
-                  <img :src="currentUser.profilePhoto" :alt="currentUser.name" class="avatar-img">
-                </div>
-                <div v-else class="avatar-circle">
-                  {{ currentUser.name?.charAt(0)?.toUpperCase() || 'U' }}
+                <div class="avatar-image">
+                  <img :src="currentUser.profilePhoto || '/default-avatar.svg'" :alt="currentUser.name" class="avatar-img">
                 </div>
                 <div class="flex-grow-1">
                   <h6 class="mb-0 text-light fw-bold">{{ currentUser.name }}</h6>

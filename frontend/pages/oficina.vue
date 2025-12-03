@@ -3,7 +3,14 @@
     <Header @buscar-evento="filtrarEventos" />
   </client-only>
 
-  <div class="container-fluid py-4 mt-6 oficina-container">
+  <!-- Loading State - Toda la página -->
+  <div v-if="loading" class="loading-fullscreen">
+    <div class="spinner-border" role="status"></div>
+    <p class="mt-3">Cargando panel...</p>
+  </div>
+
+  <!-- Content - Solo muestra cuando termina de cargar -->
+  <div v-else class="container-fluid py-4 mt-6 oficina-container">
     <!-- Mensaje de éxito -->
     <transition name="slide-fade">
       <div v-if="successMessage" class="alert alert-success alert-success-toast" role="alert">
@@ -82,10 +89,9 @@
                   <!-- Nombre -->
                   <div class="table-mobile-col col-nombre">
                     <div class="user-cell-content">
-                      <div v-if="user.profilePhoto" class="avatar-image">
-                        <img :src="user.profilePhoto" :alt="user.name" class="avatar-img">
+                      <div class="avatar-image">
+                        <img :src="user.profilePhoto || '/default-avatar.svg'" :alt="user.name" class="avatar-img">
                       </div>
-                      <div v-else class="avatar-circle">{{ user.name?.charAt(0)?.toUpperCase() || 'U' }}</div>
                       <div class="user-info">
                         <div class="user-name">{{ user.name }}</div>
                       </div>
@@ -133,12 +139,7 @@
             </div>
           </div>
 
-          <div v-if="loading" class="loading-users">
-            <div class="spinner-border text-primary" role="status"></div>
-            <p class="text-muted mt-3">Cargando usuarios...</p>
-          </div>
-
-          <div v-else-if="error" class="alert alert-danger m-4 alert-users">
+          <div v-if="error" class="alert alert-danger m-4 alert-users">
             <i class="fas fa-exclamation-triangle me-2"></i>
             {{ error }}
           </div>
@@ -160,10 +161,9 @@
                   <tr v-for="user in filteredUsers" :key="user._id">
                     <td class="cell-nombre">
                       <div class="user-cell-content">
-                        <div v-if="user.profilePhoto" class="avatar-image">
-                          <img :src="user.profilePhoto" :alt="user.name" class="avatar-img">
+                        <div class="avatar-image">
+                          <img :src="user.profilePhoto || '/default-avatar.svg'" :alt="user.name" class="avatar-img">
                         </div>
-                        <div v-else class="avatar-circle">{{ user.name?.charAt(0)?.toUpperCase() || 'U' }}</div>
                         <div class="user-info">
                           <div class="user-name">{{ user.name }}</div>
                           <small class="user-email">{{ user.email }}</small>
@@ -247,7 +247,7 @@ const API_BASE = config.public.apiBase || 'http://localhost:8085'
 
 const users = ref([])
 const searchTerm = ref('')
-const loading = ref(false)
+const loading = ref(true)
 const error = ref('')
 const editingUser = ref(null)
 const userToChangeRole = ref(null)
@@ -279,11 +279,6 @@ const statsArray = computed(() => [
 
 const { getToken } = useAuth()
 
-// Cache de modales
-let userFormModal = null
-let roleChangeModal = null
-let deleteConfirmModal = null
-
 // Cargar usuarios
 const loadUsers = async () => {
   loading.value = true
@@ -302,37 +297,60 @@ const loadUsers = async () => {
   }
 }
 
-// Inicializar modales (solo una vez)
-const initializeModals = () => {
-  if (process.client) {
-    userFormModal = new bootstrap.Modal(document.getElementById('userFormModal'), { backdrop: 'static' })
-    roleChangeModal = new bootstrap.Modal(document.getElementById('roleChangeModal'), { backdrop: 'static' })
-    deleteConfirmModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'), { backdrop: 'static' })
-  }
-}
-
 // Abrir modal de agregar usuario
 const openAddUserModal = () => {
   editingUser.value = null
-  requestAnimationFrame(() => userFormModal?.show())
+  if (process.client) {
+    nextTick(() => {
+      const modalEl = document.getElementById('userFormModal')
+      if (modalEl) {
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, { backdrop: 'static' })
+        modal.show()
+      }
+    })
+  }
 }
 
 // Abrir modal de editar usuario
 const editUser = (user) => {
   editingUser.value = user
-  requestAnimationFrame(() => userFormModal?.show())
+  if (process.client) {
+    nextTick(() => {
+      const modalEl = document.getElementById('userFormModal')
+      if (modalEl) {
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, { backdrop: 'static' })
+        modal.show()
+      }
+    })
+  }
 }
 
 // Abrir modal de cambiar rol
 const changeUserRole = (user) => {
   userToChangeRole.value = user
-  requestAnimationFrame(() => roleChangeModal?.show())
+  if (process.client) {
+    nextTick(() => {
+      const modalEl = document.getElementById('roleChangeModal')
+      if (modalEl) {
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, { backdrop: 'static' })
+        modal.show()
+      }
+    })
+  }
 }
 
 // Abrir modal de confirmación de eliminación
 const confirmDeleteUser = (user) => {
   userToDelete.value = user
-  requestAnimationFrame(() => deleteConfirmModal?.show())
+  if (process.client) {
+    nextTick(() => {
+      const modalEl = document.getElementById('deleteConfirmModal')
+      if (modalEl) {
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, { backdrop: 'static' })
+        modal.show()
+      }
+    })
+  }
 }
 
 // Manejar guardado de usuario
@@ -385,19 +403,11 @@ const formatRole = (role) => {
 }
 
 onMounted(() => {
-  if (process.client) {
-    initializeModals()
-  }
   loadUsers()
 })
 
 onUnmounted(() => {
   clearTimeout(successTimeout.value)
-  if (process.client) {
-    userFormModal?.dispose()
-    roleChangeModal?.dispose()
-    deleteConfirmModal?.dispose()
-  }
 })
 </script>
 
@@ -2078,6 +2088,46 @@ onUnmounted(() => {
 .slide-fade-leave-to {
   transform: translateY(-1rem);
   opacity: 0;
+}
+
+/* ============ Loading Fullscreen ============ */
+.loading-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(5px);
+}
+
+.loading-fullscreen .spinner-border {
+  width: 60px;
+  height: 60px;
+  border-width: 4px;
+  color: rgba(255, 255, 255, 0.2);
+  border-right-color: #ff0057;
+  animation: spin 0.8s linear infinite;
+  border-radius: 50%;
+  border-style: solid;
+}
+
+.loading-fullscreen p {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+  color: #ffffff;
+  margin-top: 20px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>
 

@@ -1,6 +1,15 @@
 <template>
   <div class="mis-entradas-page">
     <Header />
+    
+    <!-- Loading State - Toda la página -->
+    <div v-if="loading" class="loading-fullscreen">
+      <div class="spinner-border" role="status"></div>
+      <p class="mt-3">{{ $t('Cargando tus entradas...') }}</p>
+    </div>
+
+    <!-- Content - Solo muestra cuando termina de cargar -->
+    <template v-else>
     <div class="tickets-wrapper">
       <div class="page-header">
         <div>
@@ -13,12 +22,7 @@
         </NuxtLink>
       </div>
 
-      <div v-if="loading" class="state-card">
-        <div class="spinner-border" role="status"></div>
-        <p>{{ $t('Cargando tus entradas...') }}</p>
-      </div>
-
-      <div v-else-if="error" class="state-card state-card--error">
+      <div v-if="error" class="state-card state-card--error">
         <i class="bi bi-exclamation-circle"></i>
         <p>{{ error }}</p>
         <button v-if="requiresLogin" class="cta" @click="goToLogin">
@@ -42,6 +46,7 @@
       </div>
     </div>
     <Footer />
+    </template>
   </div>
 </template>
 
@@ -249,5 +254,45 @@ onMounted(loadTickets)
   .tickets-wrapper::before {
     display: none;
   }
+}
+
+/* ============ Loading Fullscreen ============ */
+.loading-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(5px);
+}
+
+.loading-fullscreen .spinner-border {
+  width: 60px;
+  height: 60px;
+  border-width: 4px;
+  color: rgba(255, 255, 255, 0.2);
+  border-right-color: #ff0057;
+  animation: spin 0.8s linear infinite;
+  border-radius: 50%;
+  border-style: solid;
+}
+
+.loading-fullscreen p {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+  color: #ffffff;
+  margin-top: 20px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>

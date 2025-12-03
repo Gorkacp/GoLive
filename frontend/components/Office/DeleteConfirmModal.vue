@@ -22,11 +22,8 @@
               <!-- Información del usuario a eliminar -->
               <div class="user-delete-info mb-4">
                 <div class="d-flex justify-content-center mb-3">
-                  <div v-if="user.profilePhoto" class="avatar-image-delete">
-                    <img :src="user.profilePhoto" :alt="user.name" class="avatar-img">
-                  </div>
-                  <div v-else class="avatar-circle-delete">
-                    {{ user.name?.charAt(0)?.toUpperCase() || 'U' }}
+                  <div class="avatar-image-delete">
+                    <img :src="user.profilePhoto || '/default-avatar.svg'" :alt="user.name" class="avatar-img">
                   </div>
                 </div>
 

@@ -1,23 +1,25 @@
 <template>
   <div class="perfil-page">
     <Header />
-    <div class="perfil-container">
+    
+    <!-- Loading State - Toda la página -->
+    <div v-if="loading" class="loading-fullscreen">
+      <div class="spinner-border" role="status"></div>
+      <p class="mt-3">Cargando perfil...</p>
+    </div>
+
+    <!-- Content - Solo muestra cuando termina de cargar -->
+    <div v-else class="perfil-container">
       <!-- Encabezado del perfil -->
       <div class="perfil-header">
         <div class="header-content">
           <div class="avatar-section">
             <div class="avatar-wrapper">
-              <div class="avatar" v-if="userData.profilePhoto" @click="triggerPhotoUpload" :class="{ 'avatar-clickable': true }">
-                <img :src="userData.profilePhoto" :alt="userData.name" class="profile-img">
+              <div class="avatar" @click="triggerPhotoUpload" :class="{ 'avatar-clickable': true }">
+                <img :src="userData.profilePhoto || '/default-avatar.svg'" :alt="userData.name" class="profile-img">
                 <div class="avatar-overlay">
                   <i class="fas fa-camera"></i>
-                  <span>Cambiar foto</span>
-                </div>
-              </div>
-              <div class="avatar avatar-empty" v-else @click="triggerPhotoUpload">
-                <div class="empty-state">
-                  <i class="fas fa-image"></i>
-                  <p>Añadir foto</p>
+                  <span>{{ userData.profilePhoto ? 'Cambiar foto' : 'Añadir foto' }}</span>
                 </div>
               </div>
               <input 
@@ -468,9 +470,9 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <Footer />
+      <Footer />
+    </div>
   </div>
 </template>
 
@@ -509,6 +511,7 @@ const { getCurrentUser, updateProfile: updateUserProfile, uploadProfilePhoto, ch
 const { registerPush, unsubscribePush, hasActiveSubscription, isMobileDevice } = usePushNotifications()
 const config = useRuntimeConfig()
 const apiBase = config.public.apiBase
+const loading = ref(true)
 const activeTab = ref('datos')
 const editMode = ref(true)  // ✅ Cambiar a true para que siempre esté en modo edición
 const savingProfile = ref(false)
@@ -601,6 +604,7 @@ onMounted(async () => {
 
 // ========== MÉTODOS DE CARGA ==========
 const loadUserData = async () => {
+  loading.value = true
   try {
     const user = await getCurrentUser()
     
@@ -636,6 +640,8 @@ const loadUserData = async () => {
       text: 'Error al cargar los datos del perfil',
       icon: 'fas fa-exclamation-circle'
     }
+  } finally {
+    loading.value = false
   }
 }
 
@@ -2251,5 +2257,45 @@ input:checked + .slider:before {
   .form-section h2 {
     font-size: 18px;
   }
+}
+
+/* ============ Loading Fullscreen ============ */
+.loading-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(5px);
+}
+
+.loading-fullscreen .spinner-border {
+  width: 60px;
+  height: 60px;
+  border-width: 4px;
+  color: rgba(255, 255, 255, 0.2);
+  border-right-color: #ff0057;
+  animation: spin 0.8s linear infinite;
+  border-radius: 50%;
+  border-style: solid;
+}
+
+.loading-fullscreen p {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+  color: #ffffff;
+  margin-top: 20px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>
