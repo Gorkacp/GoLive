@@ -272,6 +272,19 @@
             </div>
           </div>
         </div>
+
+        <!-- Map Section -->
+        <div v-if="event.location" class="map-section">
+          <div class="map-card">
+            <h3 class="map-title">
+              <i class="bi bi-geo-alt-fill"></i>
+              {{ $t('Ubicación del evento') }}
+            </h3>
+            <client-only>
+              <EventMap :address="event.location" :title="event.title" />
+            </client-only>
+          </div>
+        </div>
       </div>
 
       <!-- Zone Info Modal -->
@@ -597,6 +610,7 @@ const goToPay = () => {
   router.push(`/pay/${generateSlug(event.value.title)}`)
 }
 
+
 // Lifecycle
 onMounted(async () => {
   await loadEvent()
@@ -606,6 +620,7 @@ onMounted(async () => {
     window.scrollTo(0, 0)
   }
 })
+
 </script>
 
 <style scoped>
@@ -2449,6 +2464,75 @@ onMounted(async () => {
 
   .meta-item i {
     font-size: 0.8rem;
+  }
+}
+
+/* ============ Map Section ============ */
+.map-section {
+  width: 100%;
+  margin-top: 30px;
+}
+
+.map-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 2px solid #e5e7eb;
+}
+
+.map-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #0a0a0a;
+  margin: 0 0 16px 0;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.map-title i {
+  color: #ff0057;
+  font-size: 1.4rem;
+}
+
+/* Responsive map styles */
+@media (max-width: 768px) {
+  .map-card {
+    padding: 20px;
+  }
+
+  .map-title {
+    font-size: 1.1rem;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+  }
+
+  .map-title i {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .map-section {
+    margin-top: 20px;
+  }
+
+  .map-card {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .map-title {
+    font-size: 1rem;
+    gap: 8px;
+  }
+
+  .map-title i {
+    font-size: 1.1rem;
   }
 }
 </style>
