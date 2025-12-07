@@ -4,16 +4,16 @@
       <div class="row">
 
         <!-- Sección de información -->
-        <div class="col-lg-3 col-md-6 mb-4">
+        <div class="col-lg-3 col-md-6 col-12 mb-4">
           <h5 class="fw-bold footer-title">GoLive</h5>
           <p class="footer-description">{{ $t('GoLiveInfo') }}</p>
-          <div class="footer-logo">
+          <div class="footer-logo d-none d-md-block">
             <span class="logo-text">GoLive</span>
           </div>
         </div>
 
         <!-- Sección de enlaces rápidos -->
-        <div class="col-lg-2 col-md-6 mb-4">
+        <div class="col-lg-2 col-md-6 col-6 mb-4">
           <h5 class="fw-bold footer-title">{{ $t('Enlaces') }}</h5>
           <ul class="list-unstyled footer-links">
             <li><NuxtLink to="/" class="footer-link">{{ $t('Inicio') }}</NuxtLink></li>
@@ -24,7 +24,7 @@
         </div>
 
         <!-- Sección de soporte -->
-        <div class="col-lg-2 col-md-6 mb-4">
+        <div class="col-lg-2 col-md-6 col-6 mb-4">
           <h5 class="fw-bold footer-title">{{ $t('Soporte') || 'Soporte' }}</h5>
           <ul class="list-unstyled footer-links">
             <li><a href="#" class="footer-link">{{ $t('Ayuda') || 'Ayuda' }}</a></li>
@@ -35,7 +35,7 @@
         </div>
 
         <!-- Newsletter -->
-        <div class="col-lg-3 col-md-6 mb-4">
+        <div class="col-lg-3 col-md-6 col-12 mb-4">
           <h5 class="fw-bold footer-title">{{ $t('Newsletter') || 'Newsletter' }}</h5>
           <p class="footer-newsletter-text">{{ $t('NewsletterText') || 'Recibe las últimas novedades y ofertas exclusivas' }}</p>
           <form @submit.prevent="subscribeNewsletter" class="newsletter-form">
@@ -58,8 +58,8 @@
         </div>
 
         <!-- Sección de redes sociales -->
-        <div class="col-lg-2 col-md-6 mb-4">
-          <h5 class="fw-bold footer-title">{{ $t('Síguenos') }}</h5>
+        <div class="col-lg-2 col-md-6 col-12 mb-4">
+          <h5 class="fw-bold footer-title">{{ $t('Síguenos') || 'Síguenos' }}</h5>
           <div class="social-links">
             <a href="#" class="social-link" aria-label="Facebook">
               <i class="bi bi-facebook"></i>
@@ -119,6 +119,12 @@ const subscribeNewsletter = () => {
   background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%);
   font-family: 'Poppins', sans-serif;
   border-top: 1px solid rgba(255, 0, 87, 0.2);
+  padding: 2rem 0 1rem 0;
+}
+
+.footer-custom .container {
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
 .footer-title {
@@ -209,6 +215,11 @@ const subscribeNewsletter = () => {
   margin-top: 1rem;
 }
 
+.newsletter-form .input-group {
+  display: flex;
+  width: 100%;
+}
+
 .newsletter-input {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -216,6 +227,9 @@ const subscribeNewsletter = () => {
   border-radius: 25px 0 0 25px;
   padding: 0.6rem 1rem;
   font-size: 0.9rem;
+  flex: 1;
+  min-width: 0;
+  border-right: none;
 }
 
 .newsletter-input::placeholder {
@@ -289,16 +303,263 @@ footer a:hover {
 }
 
 @media (max-width: 768px) {
+  .footer-custom {
+    padding: 1.5rem 0 1rem 0;
+  }
+
+  .footer-custom .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .footer-custom .row {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .footer-custom .row > div {
+    padding-left: 0;
+    padding-right: 0;
+    margin-bottom: 1.5rem;
+  }
+
   .footer-title {
-    font-size: 1rem;
+    font-size: 0.95rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.4rem;
   }
-  
-  .social-links {
-    justify-content: flex-start;
+
+  .footer-title::after {
+    width: 30px;
   }
-  
+
+  .footer-description {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
+  }
+
+  .footer-logo {
+    margin-top: 0.5rem;
+  }
+
+  .logo-text {
+    font-size: 1.2rem;
+  }
+
+  .footer-links {
+    margin-top: 0.5rem;
+  }
+
+  .footer-links li {
+    margin-bottom: 0.4rem;
+  }
+
+  .footer-link {
+    font-size: 0.85rem;
+  }
+
+  .footer-newsletter-text {
+    font-size: 0.8rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+  }
+
   .newsletter-form {
     margin-top: 0.5rem;
+  }
+
+  .newsletter-form .input-group {
+    flex-wrap: nowrap;
+  }
+
+  .newsletter-input {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .newsletter-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .social-links {
+    justify-content: flex-start;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .social-link {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+  }
+
+  .footer-custom .text-center {
+    padding-top: 1rem !important;
+    margin-top: 1rem !important;
+  }
+
+  .footer-custom .text-center small {
+    font-size: 0.75rem;
+  }
+
+  .version-text {
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .footer-custom {
+    padding: 1.25rem 0 0.75rem 0;
+  }
+
+  .footer-custom .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .footer-custom .row > div {
+    margin-bottom: 1.25rem;
+  }
+
+  .footer-title {
+    font-size: 0.9rem;
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.35rem;
+  }
+
+  .footer-title::after {
+    width: 25px;
+    height: 1.5px;
+  }
+
+  .footer-description {
+    font-size: 0.8rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .logo-text {
+    font-size: 1.1rem;
+  }
+
+  .footer-links li {
+    margin-bottom: 0.35rem;
+  }
+
+  .footer-link {
+    font-size: 0.8rem;
+  }
+
+  .footer-newsletter-text {
+    font-size: 0.75rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .newsletter-form .input-group {
+    flex-wrap: nowrap;
+  }
+
+  .newsletter-input {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 20px 0 0 20px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .newsletter-btn {
+    padding: 0.45rem 0.9rem;
+    font-size: 0.85rem;
+    border-radius: 0 20px 20px 0;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .social-links {
+    gap: 0.6rem;
+  }
+
+  .social-link {
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+  }
+
+  .footer-custom .text-center {
+    padding-top: 0.75rem !important;
+    margin-top: 0.75rem !important;
+  }
+
+  .footer-custom .text-center small {
+    font-size: 0.7rem;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .version-text {
+    font-size: 0.7rem;
+    margin-top: 0.4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-custom {
+    padding: 1rem 0 0.5rem 0;
+  }
+
+  .footer-custom .container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .footer-custom .row > div {
+    margin-bottom: 1rem;
+  }
+
+  .footer-title {
+    font-size: 0.85rem;
+  }
+
+  .footer-description {
+    font-size: 0.75rem;
+  }
+
+  .logo-text {
+    font-size: 1rem;
+  }
+
+  .footer-link {
+    font-size: 0.75rem;
+  }
+
+  .newsletter-form .input-group {
+    flex-wrap: nowrap;
+  }
+
+  .newsletter-input {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.7rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .newsletter-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .social-link {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
   }
 }
 </style>

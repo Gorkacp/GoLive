@@ -189,6 +189,9 @@
 
     <!-- Footer -->
     <Footer />
+
+    <!-- Chat de Asistencia -->
+    <ChatAssistant />
   </div>
 </template>
 
@@ -197,6 +200,7 @@ import { useHead } from '#app'
 import EventCard from '~/components/EventCard.vue'
 import EventCardSkeleton from '~/components/EventCardSkeleton.vue'
 import AdvancedSearch from '~/components/AdvancedSearch.vue'
+import ChatAssistant from '~/components/ChatAssistant.vue'
 import phone1 from '~/assets/img/phone1.png'
 
 useHead({
@@ -623,6 +627,7 @@ const getPhoneImageUrl = () => {
   border: none;
   width: 100%;
   box-sizing: border-box;
+  animation: none;
 }
 
 .advanced-search-container {
@@ -641,6 +646,7 @@ const getPhoneImageUrl = () => {
   display: none;
   width: 100%;
   box-sizing: border-box;
+  animation: none;
 }
 
 .category-btn {
@@ -656,9 +662,11 @@ const getPhoneImageUrl = () => {
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
   white-space: nowrap;
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
 }
 
 .category-btn i {
@@ -675,7 +683,7 @@ const getPhoneImageUrl = () => {
 }
 
 .category-btn:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.98);
   transition: transform 0.1s ease;
 }
 
@@ -688,6 +696,8 @@ const getPhoneImageUrl = () => {
   padding: 10px 18px;
   box-shadow: 0 8px 20px rgba(255, 0, 87, 0.5);
   font-weight: 700;
+  transform: none;
+  transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .filter-separator {
@@ -1111,6 +1121,7 @@ const getPhoneImageUrl = () => {
     flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    animation: none;
   }
 
   .location-box-inline {
