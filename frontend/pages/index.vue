@@ -104,10 +104,9 @@
           </button>
         </div>
 
-        <!-- Spinner mientras carga -->
-        <div v-if="loading" class="loading-state">
-          <div class="spinner-border" role="status"></div>
-          <p class="mt-3">{{ $t('LoadingEvents') }}</p>
+        <!-- Skeleton loaders mientras carga -->
+        <div v-if="loading" class="events-grid">
+          <EventCardSkeleton v-for="n in maxDisplayedEvents" :key="`skeleton-${n}`" />
         </div>
 
         <!-- Error al cargar -->
@@ -196,6 +195,7 @@
 <script setup>
 import { useHead } from '#app'
 import EventCard from '~/components/EventCard.vue'
+import EventCardSkeleton from '~/components/EventCardSkeleton.vue'
 import AdvancedSearch from '~/components/AdvancedSearch.vue'
 import phone1 from '~/assets/img/phone1.png'
 
@@ -215,6 +215,24 @@ useHead({
   ],
   link: [
     { rel: 'canonical', href: 'https://golive-hu5d.onrender.com/' }
+  ],
+  script: [
+    {
+      type: 'application/ld+json',
+      children: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'GoLive',
+        url: 'https://golive-hu5d.onrender.com/',
+        logo: 'https://golive-hu5d.onrender.com/assets/img/1.jpg',
+        description: 'Plataforma de venta de entradas para conciertos, festivales y eventos musicales',
+        sameAs: [
+          'https://www.facebook.com/golive',
+          'https://www.instagram.com/golive',
+          'https://www.twitter.com/golive'
+        ]
+      })
+    }
   ]
 })
 
@@ -501,12 +519,30 @@ const getPhoneImageUrl = () => {
   display: block;
   margin: 0;
   padding: 0;
+  transition: transform 0.5s ease;
+}
+
+.hero:hover .hero-img {
+  transform: scale(1.05);
 }
 
 .hero-text {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  animation: fadeInUp 1s ease-out;
+  z-index: 2;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -40%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
 }
 
 .hero-text h1 {
@@ -638,6 +674,11 @@ const getPhoneImageUrl = () => {
   box-shadow: 0 4px 12px rgba(255, 0, 87, 0.3);
 }
 
+.category-btn:active {
+  transform: translateY(0);
+  transition: transform 0.1s ease;
+}
+
 .category-btn.active {
   background: linear-gradient(135deg, #ff0057 0%, #ff6b35 100%);
   background-clip: padding-box;
@@ -726,13 +767,34 @@ const getPhoneImageUrl = () => {
 }
 
 .event-card-wrapper {
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 8px;
   overflow: hidden;
+  animation: fadeInCard 0.5s ease-out backwards;
+}
+
+.event-card-wrapper:nth-child(1) { animation-delay: 0.1s; }
+.event-card-wrapper:nth-child(2) { animation-delay: 0.2s; }
+.event-card-wrapper:nth-child(3) { animation-delay: 0.3s; }
+.event-card-wrapper:nth-child(4) { animation-delay: 0.4s; }
+.event-card-wrapper:nth-child(5) { animation-delay: 0.5s; }
+.event-card-wrapper:nth-child(6) { animation-delay: 0.6s; }
+.event-card-wrapper:nth-child(7) { animation-delay: 0.7s; }
+.event-card-wrapper:nth-child(8) { animation-delay: 0.8s; }
+
+@keyframes fadeInCard {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .event-card-wrapper:hover {
-  transform: translateY(-8px);
+  transform: translateY(-8px) scale(1.02);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
 }
 
