@@ -43,6 +43,9 @@ public class User implements UserDetails {
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     private List<Object> purchases = new ArrayList<>();
+    
+    // Eventos favoritos del usuario
+    private List<String> favoriteEvents = new ArrayList<>();
 
     // ======= Constructores =======
 
@@ -105,6 +108,9 @@ public class User implements UserDetails {
 
     public List<Object> getPurchases() { return purchases; }
     public void setPurchases(List<Object> purchases) { this.purchases = purchases; }
+    
+    public List<String> getFavoriteEvents() { return favoriteEvents; }
+    public void setFavoriteEvents(List<String> favoriteEvents) { this.favoriteEvents = favoriteEvents; }
 
     // ======= Métodos UserDetails =======
 

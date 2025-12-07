@@ -27,6 +27,67 @@
         <div class="hero-overlay"></div>
         <img v-if="event.image" :src="event.image" :alt="event.title" class="hero-background" />
         
+        <!-- Botones de acción en esquina derecha -->
+        <div class="hero-actions">
+          <!-- Botón de compartir -->
+          <div class="share-container" @click.stop>
+            <button 
+              class="hero-action-btn share-btn" 
+              @click.stop="toggleShareMenu"
+              :aria-label="$t('Compartir evento') || 'Compartir evento'"
+            >
+              <i class="bi bi-share-fill"></i>
+            </button>
+            <div v-if="showShareMenu" class="share-menu" @click.stop>
+              <button 
+                class="share-option" 
+                @click="shareOnSocial('facebook')"
+                :aria-label="'Compartir en Facebook'"
+              >
+                <i class="bi bi-facebook"></i>
+                <span>Facebook</span>
+              </button>
+              <button 
+                class="share-option" 
+                @click="shareOnSocial('twitter')"
+                :aria-label="'Compartir en Twitter'"
+              >
+                <i class="bi bi-twitter-x"></i>
+                <span>Twitter</span>
+              </button>
+              <button 
+                class="share-option" 
+                @click="shareOnSocial('whatsapp')"
+                :aria-label="'Compartir en WhatsApp'"
+              >
+                <i class="bi bi-whatsapp"></i>
+                <span>WhatsApp</span>
+              </button>
+              <button 
+                class="share-option" 
+                @click="shareOnSocial('copy')"
+                :aria-label="'Copiar enlace'"
+              >
+                <i class="bi bi-link-45deg"></i>
+                <span>{{ $t('Copiar enlace') || 'Copiar enlace' }}</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Botón de favoritos -->
+          <button 
+            class="hero-action-btn favorite-btn" 
+            :class="{ active: isFavorite, disabled: !isAuthenticated || loadingFavorite }"
+            @click.stop="toggleFavorite"
+            :disabled="loadingFavorite"
+            :aria-label="$t('Guardar en favoritos') || 'Guardar en favoritos'"
+            :title="!isAuthenticated ? 'Inicia sesión para guardar en favoritos' : ''"
+          >
+            <i v-if="loadingFavorite" class="bi bi-arrow-repeat spin"></i>
+            <i v-else :class="isFavorite ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
+          </button>
+        </div>
+        
         <div class="hero-content">
           <div class="breadcrumb-nav">
             <NuxtLink to="/">{{ $t('Inicio') }}</NuxtLink>
@@ -352,11 +413,13 @@
 
 <script setup>
 import { useHead } from '#app'
+import { useI18n } from 'vue-i18n'
 import { downloadAuthorizationPDF } from '~/services/authorizationPdfService'
 import { useEventApi } from '~/api/useEventApi'
 import { useEvents } from '~/composables/useEvents'
 import { useCarrito, SERVICE_FEE_PER_TICKET } from '~/composables/useCarrito'
 import { useCartStore } from '~/stores/cart'
+import { useAuth } from '~/composables/useAuth'
 
 // Composables
 const { getEvents, findEventBySlug } = useEventApi()
@@ -365,6 +428,10 @@ const { getEvents, findEventBySlug } = useEventApi()
 const router = useRouter()
 const route = useRoute()
 const cartStore = useCartStore()
+const { t } = useI18n()
+const { isAuthenticated, getToken, getCurrentUser } = useAuth()
+const config = useRuntimeConfig()
+const apiBase = config.public.apiBase
 
 // Estados principales
 const event = ref({
@@ -380,6 +447,12 @@ const loading = ref(true)
 const error = ref('')
 const showZoneModal = ref(false)
 const selectedZone = ref(null)
+
+// Estados para favoritos y compartir
+const showShareMenu = ref(false)
+const isFavorite = ref(false)
+const currentUserId = ref(null)
+const loadingFavorite = ref(false)
 
 // Lógica del carrito usando composable
 const carrito = useCarrito(event.value)
@@ -610,16 +683,234 @@ const goToPay = () => {
   router.push(`/pay/${generateSlug(event.value.title)}`)
 }
 
+// Obtener ID único del evento
+const eventId = computed(() => event.value._id || event.value.id)
+
+// Cargar usuario actual
+const loadCurrentUser = async () => {
+  if (!isAuthenticated.value) {
+    currentUserId.value = null
+    return
+  }
+  
+  try {
+    const user = await getCurrentUser()
+    currentUserId.value = user.id || user._id
+  } catch (err) {
+    currentUserId.value = null
+  }
+}
+
+// Cargar estado de favoritos desde el backend
+const loadFavoriteStatus = async () => {
+  // Verificar condiciones de forma optimista
+  if (!isAuthenticated.value) {
+    isFavorite.value = false
+    return
+  }
+  
+  // Si no tenemos userId aún, intentar cargarlo primero
+  if (!currentUserId.value) {
+    await loadCurrentUser()
+    if (!currentUserId.value) {
+      isFavorite.value = false
+      return
+    }
+  }
+  
+  // Si no tenemos eventId aún, esperar hasta que esté disponible
+  if (!eventId.value) {
+    // Esperar hasta que el evento se cargue (máximo 2 segundos)
+    let attempts = 0
+    const maxAttempts = 20 // 20 intentos de 100ms = 2 segundos
+    
+    while (!eventId.value && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      attempts++
+    }
+    
+    if (!eventId.value) {
+      isFavorite.value = false
+      return
+    }
+  }
+  
+  try {
+    const token = getToken()
+    if (!token) {
+      isFavorite.value = false
+      return
+    }
+    
+    const response = await $fetch(`${apiBase}/api/auth/users/${currentUserId.value}/favorites/check/${eventId.value}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    isFavorite.value = response.isFavorite || false
+  } catch (err) {
+    isFavorite.value = false
+  }
+}
+
+// Toggle favorito
+const toggleFavorite = async () => {
+  // Verificar autenticación
+  if (!isAuthenticated.value) {
+    router.push('/login')
+    return
+  }
+  
+  if (!currentUserId.value || !eventId.value || loadingFavorite.value) {
+    return
+  }
+  
+  loadingFavorite.value = true
+  showShareMenu.value = false
+  
+  try {
+    const token = getToken()
+    if (!token) {
+      router.push('/login')
+      return
+    }
+    
+    if (isFavorite.value) {
+      // Eliminar de favoritos
+      await $fetch(`${apiBase}/api/auth/users/${currentUserId.value}/favorites/${eventId.value}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      isFavorite.value = false
+    } else {
+      // Agregar a favoritos
+      await $fetch(`${apiBase}/api/auth/users/${currentUserId.value}/favorites`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: {
+          eventId: eventId.value
+        }
+      })
+      isFavorite.value = true
+    }
+  } catch (err) {
+    // Silencioso - no mostrar error
+  } finally {
+    loadingFavorite.value = false
+  }
+}
+
+// Toggle menú de compartir
+const toggleShareMenu = () => {
+  showShareMenu.value = !showShareMenu.value
+}
+
+// Cerrar menú de compartir al hacer click fuera
+if (process.client) {
+  watch(showShareMenu, (isOpen) => {
+    if (isOpen) {
+      const closeMenu = (e) => {
+        if (!e.target.closest('.share-container')) {
+          showShareMenu.value = false
+          document.removeEventListener('click', closeMenu)
+        }
+      }
+      setTimeout(() => {
+        document.addEventListener('click', closeMenu)
+      }, 0)
+    }
+  })
+}
+
+// Compartir en redes sociales
+const shareOnSocial = (platform) => {
+  const eventUrl = getEventUrl()
+  const eventDescription = `${event.value.title} - ${event.value.venue}`
+  
+  let shareUrl = ''
+  
+  switch (platform) {
+    case 'facebook':
+      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(eventUrl)}`
+      break
+    case 'twitter':
+      shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(eventDescription)}&url=${encodeURIComponent(eventUrl)}`
+      break
+    case 'whatsapp':
+      shareUrl = `https://wa.me/?text=${encodeURIComponent(`${eventDescription} ${eventUrl}`)}`
+      break
+    case 'copy':
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(eventUrl).catch(() => {
+          // Silencioso
+        })
+      } else {
+        try {
+          const textArea = document.createElement('textarea')
+          textArea.value = eventUrl
+          document.body.appendChild(textArea)
+          textArea.select()
+          document.execCommand('copy')
+          document.body.removeChild(textArea)
+        } catch (err) {
+          // Silencioso
+        }
+      }
+      showShareMenu.value = false
+      return
+  }
+  
+  if (shareUrl) {
+    window.open(shareUrl, '_blank', 'width=600,height=400')
+    showShareMenu.value = false
+  }
+}
+
+// Obtener URL del evento
+const getEventUrl = () => {
+  if (process.client) {
+    return window.location.href
+  }
+  return ''
+}
 
 // Lifecycle
 onMounted(async () => {
-  await loadEvent()
+  // Cargar usuario y evento en paralelo
+  await Promise.all([
+    loadCurrentUser(),
+    loadEvent()
+  ])
+  
+  // Cargar favoritos inmediatamente después (en paralelo con cualquier otra cosa)
+  // No esperamos porque queremos que se muestre rápido
+  loadFavoriteStatus()
 
   // Scroll to top solo en cliente
   if (process.client) {
     window.scrollTo(0, 0)
   }
 })
+
+// Recargar favoritos cuando cambie el evento o el usuario (inmediatamente)
+watch([() => event.value?._id, currentUserId, () => isAuthenticated.value], async (newValues, oldValues) => {
+  const [newEventId, newUserId, newAuth] = newValues
+  const [oldEventId, oldUserId, oldAuth] = oldValues || [null, null, false]
+  
+  // Cargar si tenemos un eventId y cambió algo relevante, o si es la primera vez que tenemos eventId
+  if (newEventId && (newEventId !== oldEventId || newUserId !== oldUserId || newAuth !== oldAuth)) {
+    await loadFavoriteStatus()
+  }
+}, { immediate: true })
 
 </script>
 
@@ -732,6 +1023,138 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Botones de acción en el hero */
+.hero-actions {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  z-index: 10;
+}
+
+.hero-action-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(10, 10, 10, 0.85);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  font-size: 1.2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.hero-action-btn:hover {
+  background: rgba(255, 0, 87, 0.9);
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(255, 0, 87, 0.5);
+}
+
+.favorite-btn.active {
+  background: rgba(255, 0, 87, 0.95);
+  color: #ffffff;
+}
+
+.favorite-btn.active i {
+  animation: heartBeat 0.4s ease;
+}
+
+@keyframes heartBeat {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.2); }
+  50% { transform: scale(1); }
+  75% { transform: scale(1.1); }
+}
+
+.favorite-btn.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.favorite-btn.disabled:hover {
+  transform: scale(1);
+  background: rgba(10, 10, 10, 0.85);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Menú de compartir */
+.share-container {
+  position: relative;
+}
+
+.share-menu {
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  padding: 8px;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 20;
+  animation: slideUp 0.3s ease;
+  white-space: nowrap;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.share-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  text-align: left;
+  font-family: 'Poppins', sans-serif;
+}
+
+.share-option:hover {
+  background: rgba(255, 0, 87, 0.2);
+  color: #ff0057;
+}
+
+.share-option i {
+  font-size: 1.2rem;
+  width: 24px;
+  text-align: center;
+}
+
+.share-option span {
+  flex: 1;
 }
 
 .hero-background {
@@ -2144,6 +2567,35 @@ onMounted(async () => {
   .hero-section {
     height: 280px;
     padding: 20px;
+  }
+
+  .hero-actions {
+    bottom: 12px;
+    right: 12px;
+    gap: 8px;
+  }
+
+  .hero-action-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
+  }
+
+  .share-menu {
+    bottom: 50px;
+    min-width: 140px;
+    padding: 4px;
+  }
+
+  .share-option {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    gap: 8px;
+  }
+
+  .share-option i {
+    font-size: 1rem;
+    width: 20px;
   }
 
   .hero-title {

@@ -18,8 +18,10 @@ import com.golive.backend.dto.ForgotPasswordRequest;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Base64;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -620,6 +622,114 @@ public class AuthController {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Error al cambiar la contraseña: " + e.getMessage());
+        }
+    }
+
+    // ========== ENDPOINTS DE FAVORITOS ==========
+    
+    @GetMapping("/users/{id}/favorites/check/{eventId}")
+    public ResponseEntity<?> checkFavorite(@PathVariable String id,
+                                           @PathVariable String eventId,
+                                           @RequestHeader(value = "Authorization", required = false) String token) {
+        try {
+            // Verificar autenticación
+            Optional<User> currentUser = authService.getUserFromToken(token);
+            if (currentUser.isEmpty()) {
+                return ResponseEntity.ok(Map.of("isFavorite", false));
+            }
+            
+            // Verificar que el usuario solo pueda ver sus propios favoritos
+            if (!currentUser.get().getId().equals(id)) {
+                return ResponseEntity.status(403).body("No tienes permiso para ver estos favoritos");
+            }
+            
+            User user = userService.findUserById(id)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
+            boolean isFavorite = user.getFavoriteEvents() != null && user.getFavoriteEvents().contains(eventId);
+            
+            return ResponseEntity.ok(Map.of("isFavorite", isFavorite));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("isFavorite", false));
+        }
+    }
+    
+    @PostMapping("/users/{id}/favorites")
+    public ResponseEntity<?> addFavorite(@PathVariable String id,
+                                         @RequestBody Map<String, String> body,
+                                         @RequestHeader(value = "Authorization", required = false) String token) {
+        try {
+            // Verificar autenticación
+            Optional<User> currentUser = authService.getUserFromToken(token);
+            if (currentUser.isEmpty()) {
+                return ResponseEntity.status(401).body("No autorizado");
+            }
+            
+            // Verificar que el usuario solo pueda modificar sus propios favoritos
+            if (!currentUser.get().getId().equals(id)) {
+                return ResponseEntity.status(403).body("No tienes permiso para modificar estos favoritos");
+            }
+            
+            String eventId = body.get("eventId");
+            if (eventId == null || eventId.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("eventId es requerido");
+            }
+            
+            User user = userService.findUserById(id)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
+            if (user.getFavoriteEvents() == null) {
+                user.setFavoriteEvents(new ArrayList<>());
+            }
+            
+            // Agregar solo si no existe
+            if (!user.getFavoriteEvents().contains(eventId)) {
+                user.getFavoriteEvents().add(eventId);
+                user.setUpdatedAt(LocalDateTime.now());
+                userService.save(user);
+            }
+            
+            return ResponseEntity.ok(Map.of("favorites", user.getFavoriteEvents()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al agregar favorito");
+        }
+    }
+    
+    @DeleteMapping("/users/{id}/favorites/{eventId}")
+    public ResponseEntity<?> removeFavorite(@PathVariable String id,
+                                           @PathVariable String eventId,
+                                           @RequestHeader(value = "Authorization", required = false) String token) {
+        try {
+            // Verificar autenticación
+            Optional<User> currentUser = authService.getUserFromToken(token);
+            if (currentUser.isEmpty()) {
+                return ResponseEntity.status(401).body("No autorizado");
+            }
+            
+            // Verificar que el usuario solo pueda modificar sus propios favoritos
+            if (!currentUser.get().getId().equals(id)) {
+                return ResponseEntity.status(403).body("No tienes permiso para modificar estos favoritos");
+            }
+            
+            User user = userService.findUserById(id)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
+            if (user.getFavoriteEvents() == null) {
+                user.setFavoriteEvents(new ArrayList<>());
+            }
+            
+            // Eliminar si existe
+            user.getFavoriteEvents().remove(eventId);
+            user.setUpdatedAt(LocalDateTime.now());
+            userService.save(user);
+            
+            return ResponseEntity.ok(Map.of("favorites", user.getFavoriteEvents()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al eliminar favorito");
         }
     }
 
