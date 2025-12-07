@@ -2953,6 +2953,14 @@ onUnmounted(() => {
   overflow-x: hidden;
 }
 
+/* Solo en móviles: eliminar espacio superior */
+@media (max-width: 768px) {
+  .backoffice-page {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+}
+
 .backoffice-shell {
   box-sizing: border-box;
   width: min(1400px, 100%);
@@ -5904,6 +5912,36 @@ onUnmounted(() => {
 .text-danger {
   color: #ff5252;
   margin-left: 4px;
+}
+
+/* ============ Eliminar espacio entre header y contenido (solo móviles) ============ */
+@media (max-width: 768px) {
+  :deep(html),
+  :deep(body) {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  :deep(body.fixed-top),
+  :deep(body.has-fixed-top),
+  :deep(body) {
+    padding-top: 0 !important;
+  }
+
+  :deep(.navbar.fixed-top) {
+    margin-bottom: 0 !important;
+  }
+
+  ClientOnly {
+    display: block;
+    margin: 0;
+    padding: 0;
+  }
+
+  ClientOnly + * {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
 }
 </style>
 

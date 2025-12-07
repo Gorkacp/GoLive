@@ -145,6 +145,24 @@ onMounted(loadTickets)
   position: relative;
 }
 
+.mis-entradas-page {
+  padding-top: 0;
+  margin-top: 0;
+}
+
+/* Solo en móviles: eliminar espacio superior */
+@media (max-width: 768px) {
+  .tickets-wrapper {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+  
+  .mis-entradas-page {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -290,6 +308,36 @@ onMounted(loadTickets)
   margin-top: 20px;
   font-weight: 500;
   letter-spacing: 0.5px;
+}
+
+/* ============ Eliminar espacio entre header y contenido (solo móviles) ============ */
+@media (max-width: 768px) {
+  :deep(html),
+  :deep(body) {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  :deep(body.fixed-top),
+  :deep(body.has-fixed-top),
+  :deep(body) {
+    padding-top: 0 !important;
+  }
+
+  :deep(.navbar.fixed-top) {
+    margin-bottom: 0 !important;
+  }
+
+  client-only {
+    display: block;
+    margin: 0;
+    padding: 0;
+  }
+
+  client-only + * {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
 }
 
 @keyframes spin {

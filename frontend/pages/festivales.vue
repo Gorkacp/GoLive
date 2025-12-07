@@ -774,6 +774,37 @@ onMounted(() => {
   width: 100vw !important;
 }
 
+/* Solo en móviles: eliminar espacio entre header y contenido */
+@media (max-width: 768px) {
+  :deep(html),
+  :deep(body) {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  :deep(body.fixed-top),
+  :deep(body.has-fixed-top),
+  :deep(body) {
+    padding-top: 0 !important;
+  }
+
+  :deep(.navbar.fixed-top) {
+    margin-bottom: 0 !important;
+  }
+
+  client-only {
+    display: block;
+    margin: 0;
+    padding: 0;
+  }
+
+  client-only + template > .hero-carousel,
+  client-only + template > .hero {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+}
+
 .main-container {
   width: 100%;
   max-width: 100vw;
@@ -782,12 +813,34 @@ onMounted(() => {
   padding: 0;
 }
 
+/* Solo en móviles: eliminar espacio superior */
+@media (max-width: 768px) {
+  .main-container {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  .main-container > .hero-carousel,
+  .main-container > .hero {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+}
+
 /* ============ Hero Carousel Section ============ */
 .hero-carousel {
   height: 60vh;
   position: relative;
   overflow: hidden;
   background: #000000;
+}
+
+/* Solo en móviles: eliminar espacio superior */
+@media (max-width: 768px) {
+  .hero-carousel {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
 }
 
 .carousel-container {
@@ -1074,6 +1127,15 @@ onMounted(() => {
   height: 60vh;
   position: relative;
   overflow: hidden;
+  background: transparent;
+}
+
+/* Solo en móviles: eliminar espacio superior */
+@media (max-width: 768px) {
+  .hero {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
 }
 
 .hero-img {
@@ -2313,7 +2375,8 @@ onMounted(() => {
 
   .hero-carousel {
     height: 35vh;
-    margin-top: 70px;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
   }
 
   .carousel-prev,

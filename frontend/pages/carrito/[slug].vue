@@ -637,6 +637,14 @@ onMounted(async () => {
   overflow-x: hidden;
 }
 
+/* Solo en móviles: eliminar espacio superior */
+@media (max-width: 768px) {
+  .carrito-page {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+}
+
 /* ============ Loading State ============ */
 .loading-container {
   display: flex;
@@ -2533,6 +2541,36 @@ onMounted(async () => {
 
   .map-title i {
     font-size: 1.1rem;
+  }
+}
+
+/* ============ Eliminar espacio entre header y contenido (solo móviles) ============ */
+@media (max-width: 768px) {
+  :deep(html),
+  :deep(body) {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  :deep(body.fixed-top),
+  :deep(body.has-fixed-top),
+  :deep(body) {
+    padding-top: 0 !important;
+  }
+
+  :deep(.navbar.fixed-top) {
+    margin-bottom: 0 !important;
+  }
+
+  client-only {
+    display: block;
+    margin: 0;
+    padding: 0;
+  }
+
+  client-only + * {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
   }
 }
 </style>

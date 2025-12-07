@@ -6,7 +6,7 @@
     </client-only>
 
     <!-- Hero -->
-    <div class="hero position-relative text-center d-flex align-items-center justify-content-center">
+    <div class="hero position-relative text-center d-flex align-items-center justify-content-center" style="margin-top: 0 !important; padding-top: 0 !important;">
       <img src="/assets/img/1.jpg" alt="Hero" class="hero-img w-100" />
       <div class="hero-text position-absolute">
         <h1 class="display-3 fw-bold">GoLive</h1>
@@ -131,7 +131,7 @@
         <!-- Eventos filtrados -->
         <div v-else-if="filteredEvents.length" class="events-grid">
           <div
-            v-for="event in filteredEvents"
+            v-for="event in displayedEvents"
             :key="event._id || event.id"
             class="event-card-wrapper"
           >
@@ -149,9 +149,12 @@
           </button>
         </div>
 
-        <!-- Mostrar resultados -->
-        <div v-if="filteredEvents.length && !loading" class="results-info">
-          <p>Se muestran <strong>{{ filteredEvents.length }}</strong> de <strong>{{ events.length }}</strong> eventos</p>
+        <!-- Botón Ver más -->
+        <div v-if="filteredEvents.length > maxDisplayedEvents && !loading" class="ver-mas-container">
+          <button class="btn-ver-mas" @click="goToCategoryPage">
+            <span>{{ $t('Ver más') }}</span>
+            <i class="bi bi-arrow-right"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -232,6 +235,19 @@ const error = ref('')
 const searchQuery = ref('')
 const locationFilter = ref('')
 const activeCategory = ref('all')
+const isMobile = ref(false)
+
+// Detectar si es móvil
+const checkMobile = () => {
+  if (process.client) {
+    isMobile.value = window.innerWidth <= 768
+  }
+}
+
+// Límite de eventos según el dispositivo
+const maxDisplayedEvents = computed(() => {
+  return isMobile.value ? 4 : 8
+})
 
 // Cargar eventos desde el backend MongoDB
 const loadEvents = async () => {
@@ -296,6 +312,21 @@ const filteredEvents = computed(() => {
   })
 })
 
+// Eventos mostrados (limitados según dispositivo)
+const displayedEvents = computed(() => {
+  return filteredEvents.value.slice(0, maxDisplayedEvents.value)
+})
+
+// Función para navegar según la categoría seleccionada
+const goToCategoryPage = () => {
+  const router = useRouter()
+  if (activeCategory.value === 'festival') {
+    router.push('/festivales')
+  } else {
+    router.push('/conciertos')
+  }
+}
+
 // Filtrar por búsqueda desde el header (compatibilidad)
 const filtrarEventos = (texto) => {
   if (!texto) {
@@ -327,7 +358,22 @@ const installApp = async (platform) => {
 }
 
 // Cargar eventos solo una vez al montar la página
-onMounted(() => loadEvents())
+onMounted(() => {
+  loadEvents()
+  checkMobile()
+  
+  // Escuchar cambios de tamaño de ventana
+  if (process.client) {
+    window.addEventListener('resize', checkMobile)
+  }
+})
+
+// Limpiar listener al desmontar
+onUnmounted(() => {
+  if (process.client) {
+    window.removeEventListener('resize', checkMobile)
+  }
+})
 
 // Función para obtener la URL correcta de la imagen del teléfono
 const getPhoneImageUrl = () => {
@@ -366,11 +412,62 @@ const getPhoneImageUrl = () => {
   padding: 0;
 }
 
+/* Solo en móviles: eliminar espacio entre header y contenido */
+@media (max-width: 768px) {
+  :deep(html),
+  :deep(body) {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  :deep(body.fixed-top),
+  :deep(body.has-fixed-top),
+  :deep(body) {
+    padding-top: 0 !important;
+  }
+
+  :deep(.navbar.fixed-top) {
+    margin-bottom: 0 !important;
+  }
+
+  client-only {
+    display: block;
+    margin: 0;
+    padding: 0;
+  }
+
+  client-only + .hero {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  .main-container {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  .main-container > .hero {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    position: relative;
+    top: 0;
+  }
+}
+
 /* ============ Hero Section ============ */
 .hero {
   height: 60vh;
   position: relative;
   overflow: hidden;
+  background: transparent;
+}
+
+/* Solo en móviles: eliminar espacio superior */
+@media (max-width: 768px) {
+  .hero {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
 }
 
 .hero-img {
@@ -378,6 +475,9 @@ const getPhoneImageUrl = () => {
   height: 100%;
   width: 100%;
   filter: brightness(0.5);
+  display: block;
+  margin: 0;
+  padding: 0;
 }
 
 .hero-text {
@@ -759,6 +859,54 @@ const getPhoneImageUrl = () => {
   font-weight: 700;
 }
 
+/* ============ Ver Más Button ============ */
+.ver-mas-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 15px;
+  margin-top: 20px;
+}
+
+.btn-ver-mas {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 32px;
+  background: linear-gradient(135deg, #ff0057 0%, #ff6b35 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 20px rgba(255, 0, 87, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-ver-mas:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(255, 0, 87, 0.6);
+  background: linear-gradient(135deg, #ff1a6b 0%, #ff7b45 100%);
+}
+
+.btn-ver-mas:active {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(255, 0, 87, 0.5);
+}
+
+.btn-ver-mas i {
+  font-size: 1.2rem;
+  transition: transform 0.3s ease;
+}
+
+.btn-ver-mas:hover i {
+  transform: translateX(4px);
+}
+
 /* ============ Responsive ============ */
 @media (max-width: 768px) {
   .hero {
@@ -925,6 +1073,20 @@ const getPhoneImageUrl = () => {
   .results-info p {
     font-size: 0.8rem;
   }
+
+  .ver-mas-container {
+    padding: 30px 8px;
+    margin-top: 15px;
+  }
+
+  .btn-ver-mas {
+    padding: 14px 24px;
+    font-size: 0.95rem;
+  }
+
+  .btn-ver-mas i {
+    font-size: 1rem;
+  }
 }
 
 * {
@@ -937,6 +1099,11 @@ html, body {
   width: 100vw !important;
   margin: 0 !important;
   padding: 0 !important;
+  padding-top: 0 !important;
+}
+
+body {
+  padding-top: 0 !important;
 }
 
 /* ============ App Download Section ============ */

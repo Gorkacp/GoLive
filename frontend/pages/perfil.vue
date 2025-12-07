@@ -1049,6 +1049,23 @@ const onToggleNotifications = async (checked) => {
   width: 100%;
 }
 
+.perfil-page {
+  padding-top: 0;
+  margin-top: 0;
+}
+
+/* Solo en móviles: eliminar espacio superior */
+@media (max-width: 768px) {
+  .perfil-container {
+    padding-top: 0 !important;
+  }
+  
+  .perfil-page {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+}
+
 /* ========== HEADER DEL PERFIL ========== */
 .perfil-header {
   background: white;
@@ -2297,5 +2314,35 @@ input:checked + .slider:before {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* ============ Eliminar espacio entre header y contenido (solo móviles) ============ */
+@media (max-width: 768px) {
+  :deep(html),
+  :deep(body) {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  :deep(body.fixed-top),
+  :deep(body.has-fixed-top),
+  :deep(body) {
+    padding-top: 0 !important;
+  }
+
+  :deep(.navbar.fixed-top) {
+    margin-bottom: 0 !important;
+  }
+
+  client-only {
+    display: block;
+    margin: 0;
+    padding: 0;
+  }
+
+  client-only + * {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
 }
 </style>
