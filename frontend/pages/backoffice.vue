@@ -47,16 +47,62 @@
         </div>
 
         <nav class="sidebar-nav">
-          <button
-            v-for="item in navigation"
-            :key="item.id"
-            class="nav-chip"
-            :class="{ active: activeSection === item.id }"
-            @click="handleNavClick(item.id)"
-          >
-            <i :class="item.icon"></i>
-            {{ item.label }}
-          </button>
+          <!-- Grupo Principal -->
+          <div class="nav-group">
+            <p class="nav-group-label">Gestión</p>
+            <div class="nav-items">
+              <button
+                v-for="item in navigation.filter(n => n.group === 'main')"
+                :key="item.id"
+                class="nav-chip"
+                :class="{ active: activeSection === item.id }"
+                @click="handleNavClick(item.id)"
+              >
+                <span class="nav-icon">
+                  <i :class="item.icon"></i>
+                </span>
+                <span class="nav-label">{{ item.label }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Grupo Analítica -->
+          <div class="nav-group">
+            <p class="nav-group-label">Reportes</p>
+            <div class="nav-items">
+              <button
+                v-for="item in navigation.filter(n => n.group === 'analytics')"
+                :key="item.id"
+                class="nav-chip"
+                :class="{ active: activeSection === item.id }"
+                @click="handleNavClick(item.id)"
+              >
+                <span class="nav-icon">
+                  <i :class="item.icon"></i>
+                </span>
+                <span class="nav-label">{{ item.label }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Grupo Financiero -->
+          <div class="nav-group">
+            <p class="nav-group-label">Finanzas</p>
+            <div class="nav-items">
+              <button
+                v-for="item in navigation.filter(n => n.group === 'financial')"
+                :key="item.id"
+                class="nav-chip"
+                :class="{ active: activeSection === item.id }"
+                @click="handleNavClick(item.id)"
+              >
+                <span class="nav-icon">
+                  <i :class="item.icon"></i>
+                </span>
+                <span class="nav-label">{{ item.label }}</span>
+              </button>
+            </div>
+          </div>
         </nav>
 
         <div class="sidebar-stats">
@@ -73,37 +119,226 @@
       </aside>
 
       <main class="backoffice-content">
-        <header class="content-header">
-          <div>
-            <p class="eyebrow">Bienvenido de nuevo</p>
-            <h1>Control total de tus eventos</h1>
-            <p class="subtitle">
-              Revisa resultados en tiempo real, gestiona ventas y publica nuevos eventos sin salir de este panel.
-            </p>
-          </div>
-          <button class="btn-primary" @click="openNewEventForm">
-            <i class="fas fa-plus me-2"></i>
-            Nuevo evento
-          </button>
-        </header>
-
+        <!-- Sección Dashboard -->
         <section
-          class="metrics-grid"
+          class="dashboard-section"
           id="dashboard"
           ref="dashboardSection"
           v-if="activeSection === 'dashboard'"
         >
-          <div class="metric-card" v-for="metric in metricCards" :key="metric.title">
-            <div class="metric-icon">
-              <i :class="metric.icon"></i>
+          <!-- Título del Dashboard -->
+          <div class="dashboard-header">
+            <h1 class="dashboard-title">Dashboard</h1>
+            <p class="dashboard-subtitle">Vista general de tus eventos y métricas de rendimiento</p>
+          </div>
+
+          <!-- Métricas principales -->
+          <div class="metrics-grid">
+            <div class="metric-card" v-for="metric in metricCards" :key="metric.title">
+              <div class="metric-icon">
+                <i :class="metric.icon"></i>
+              </div>
+              <p class="metric-label">{{ metric.title }}</p>
+              <h3 class="metric-value">{{ metric.value }}</h3>
+              <small class="metric-foot">{{ metric.footnote }}</small>
             </div>
-            <p class="metric-label">{{ metric.title }}</p>
-            <h3 class="metric-value">{{ metric.value }}</h3>
-            <small class="metric-foot">{{ metric.footnote }}</small>
+          </div>
+
+          <!-- Resumen rápido y gráficos -->
+          <div class="dashboard-content-grid">
+            <!-- Panel de resumen rápido -->
+            <div class="panel dashboard-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Resumen Rápido</p>
+                  <h2>Vista General</h2>
+                </div>
+                <button class="btn-outline" @click="refreshData" :disabled="loadingDashboard">
+                  <i class="fas fa-sync me-2"></i>Actualizar
+                </button>
+              </div>
+
+              <div v-if="loadingDashboard" class="panel-loading">
+                <div class="spinner-border text-light" role="status"></div>
+                <p>Cargando datos...</p>
+              </div>
+
+              <div v-else class="quick-summary">
+                <div class="summary-row">
+                  <div class="summary-item">
+                    <div class="summary-icon revenue">
+                      <i class="fas fa-euro-sign"></i>
+                    </div>
+                    <div class="summary-text">
+                      <p class="summary-label">Ticket Promedio</p>
+                      <h4>{{ averageTicketPrice }}</h4>
+                    </div>
+                  </div>
+                  <div class="summary-item">
+                    <div class="summary-icon tickets">
+                      <i class="fas fa-ticket-alt"></i>
+                    </div>
+                    <div class="summary-text">
+                      <p class="summary-label">Ocupación Media</p>
+                      <h4>{{ dashboard?.averageOccupancy?.toFixed(1) || 0 }}%</h4>
+                    </div>
+                  </div>
+                </div>
+                <div class="summary-row">
+                  <div class="summary-item">
+                    <div class="summary-icon events">
+                      <i class="fas fa-calendar"></i>
+                    </div>
+                    <div class="summary-text">
+                      <p class="summary-label">Eventos Totales</p>
+                      <h4>{{ dashboard?.totalEvents || 0 }}</h4>
+                    </div>
+                  </div>
+                  <div class="summary-item">
+                    <div class="summary-icon conversion">
+                      <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="summary-text">
+                      <p class="summary-label">Tasa Conversión</p>
+                      <h4>{{ conversionRate }}%</h4>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Mejor evento destacado -->
+                <div v-if="dashboard?.topEvent" class="top-event-highlight">
+                  <div class="highlight-header">
+                    <i class="fas fa-trophy"></i>
+                    <span>Mejor Evento</span>
+                  </div>
+                  <h3>{{ dashboard.topEvent.title }}</h3>
+                  <div class="highlight-stats">
+                    <div class="highlight-stat">
+                      <span class="stat-label">Ingresos</span>
+                      <span class="stat-value">{{ formatCurrency(dashboard.topEvent.grossRevenue || 0) }}</span>
+                    </div>
+                    <div class="highlight-stat">
+                      <span class="stat-label">Tickets</span>
+                      <span class="stat-value">{{ dashboard.topEvent.soldTickets || 0 }}</span>
+                    </div>
+                    <div class="highlight-stat">
+                      <span class="stat-label">Ocupación</span>
+                      <span class="stat-value">{{ dashboard.topEvent.occupancy?.toFixed(1) || 0 }}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Gráfico de distribución -->
+            <div class="panel dashboard-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Distribución</p>
+                  <h2>Ingresos por Categoría</h2>
+                </div>
+              </div>
+              <div class="chart-canvas-wrapper">
+                <canvas id="category-chart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Eventos recientes y próximos -->
+          <div class="dashboard-events-grid">
+            <!-- Próximos eventos -->
+            <div class="panel dashboard-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Próximos Eventos</p>
+                  <h2>En Venta</h2>
+                </div>
+              </div>
+              <div v-if="upcomingEvents.length === 0" class="panel-empty small">
+                <p>No hay eventos próximos</p>
+              </div>
+              <div v-else class="events-mini-list">
+                <div 
+                  v-for="event in upcomingEvents.slice(0, 5)" 
+                  :key="event.id" 
+                  class="mini-event-card"
+                  @click="goToSection('events')"
+                >
+                  <div class="mini-event-image">
+                    <img :src="event.image || fallbackImage" :alt="event.title" />
+                  </div>
+                  <div class="mini-event-info">
+                    <h4>{{ event.title }}</h4>
+                    <p>{{ formatDate(event.date, event.time) }}</p>
+                    <div class="mini-event-stats">
+                      <span class="mini-stat">
+                        <i class="fas fa-ticket-alt"></i>
+                        {{ event.performance?.soldTickets || 0 }}/{{ event.availableTickets }}
+                      </span>
+                      <span class="mini-stat revenue">
+                        <i class="fas fa-euro-sign"></i>
+                        {{ formatCurrency(event.performance?.grossRevenue || 0) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Eventos pasados -->
+            <div class="panel dashboard-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Eventos Pasados</p>
+                  <h2>Historial</h2>
+                </div>
+              </div>
+              <div v-if="pastEvents.length === 0" class="panel-empty small">
+                <p>No hay eventos pasados</p>
+              </div>
+              <div v-else class="events-mini-list">
+                <div 
+                  v-for="event in pastEvents.slice(0, 5)" 
+                  :key="event.id" 
+                  class="mini-event-card"
+                  @click="goToSection('events')"
+                >
+                  <div class="mini-event-image">
+                    <img :src="event.image || fallbackImage" :alt="event.title" />
+                  </div>
+                  <div class="mini-event-info">
+                    <h4>{{ event.title }}</h4>
+                    <p>{{ formatDate(event.date, event.time) }}</p>
+                    <div class="mini-event-stats">
+                      <span class="mini-stat">
+                        <i class="fas fa-ticket-alt"></i>
+                        {{ event.performance?.soldTickets || 0 }}/{{ event.availableTickets }}
+                      </span>
+                      <span class="mini-stat revenue">
+                        <i class="fas fa-euro-sign"></i>
+                        {{ formatCurrency(event.performance?.grossRevenue || 0) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section class="panel-group full-width-panel-group" id="events" ref="eventsSection">
+        <!-- Sección de Eventos -->
+        <section 
+          class="panel-group full-width-panel-group" 
+          id="events" 
+          ref="eventsSection"
+          v-if="activeSection === 'events'"
+        >
+          <!-- Título del Eventos -->
+          <div class="dashboard-header">
+            <h1 class="dashboard-title">Eventos</h1>
+            <p class="dashboard-subtitle">Gestiona y visualiza el rendimiento de todos tus eventos</p>
+          </div>
+
           <div class="panel performance-panel full-width-panel">
             <div class="panel-heading">
               <div>
@@ -246,8 +481,22 @@
               </article>
             </div>
           </div>
+        </section>
 
-          <div class="panel form-panel" id="form" ref="formSection" v-if="showFormPanel">
+        <!-- Sección de Formulario -->
+        <section 
+          class="panel-group full-width-panel-group" 
+          id="form" 
+          ref="formSection"
+          v-if="activeSection === 'form'"
+        >
+          <!-- Título del Formulario -->
+          <div class="dashboard-header">
+            <h1 class="dashboard-title">Nuevo Evento</h1>
+            <p class="dashboard-subtitle">{{ editingEvent ? 'Modifica los datos del evento existente' : 'Crea y configura un nuevo evento para tu catálogo' }}</p>
+          </div>
+
+          <div class="panel form-panel full-width-panel" v-if="showFormPanel">
             <button class="panel-close" type="button" @click="closeFormPanel">
               <i class="fas fa-times"></i>
             </button>
@@ -365,7 +614,7 @@
 
           <div
             class="panel form-panel placeholder-panel"
-            v-else-if="activeSection !== 'dashboard'"
+            v-else-if="activeSection === 'form' && !showFormPanel"
           >
             <div class="placeholder-content">
               <p class="eyebrow">Gestión</p>
@@ -379,6 +628,334 @@
             </div>
           </div>
         </section>
+
+        <!-- Sección de Analítica -->
+        <section
+          class="panel-group full-width-panel-group"
+          id="analytics"
+          ref="analyticsSection"
+          v-if="activeSection === 'analytics'"
+        >
+          <!-- Título de Analítica -->
+          <div class="dashboard-header">
+            <h1 class="dashboard-title">Analítica</h1>
+            <p class="dashboard-subtitle">Métricas detalladas, tendencias y comparativas de rendimiento</p>
+          </div>
+
+          <div class="panel performance-panel full-width-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Analítica Avanzada</p>
+                <h2>Métricas y Tendencias</h2>
+              </div>
+              <button class="btn-outline" @click="refreshAnalytics" :disabled="analyticsLoading">
+                <i class="fas fa-sync me-2"></i>Actualizar
+              </button>
+            </div>
+
+            <div v-if="analyticsLoading" class="panel-loading">
+              <div class="spinner-border text-light" role="status"></div>
+              <p>Cargando analítica...</p>
+            </div>
+
+            <div v-else class="analytics-content">
+              <!-- Métricas de rendimiento -->
+              <div class="analytics-metrics">
+                <div class="analytics-card">
+                  <div class="analytics-icon revenue">
+                    <i class="fas fa-euro-sign"></i>
+                  </div>
+                  <div class="analytics-info">
+                    <p class="analytics-label">Ingresos Totales</p>
+                    <h3>{{ formatCurrency(dashboard?.totalRevenue || 0) }}</h3>
+                    <small>Bruto acumulado</small>
+                  </div>
+                </div>
+                <div class="analytics-card">
+                  <div class="analytics-icon tickets">
+                    <i class="fas fa-ticket-alt"></i>
+                  </div>
+                  <div class="analytics-info">
+                    <p class="analytics-label">Tickets Vendidos</p>
+                    <h3>{{ dashboard?.totalTicketsSold || 0 }}</h3>
+                    <small>Total histórico</small>
+                  </div>
+                </div>
+                <div class="analytics-card">
+                  <div class="analytics-icon events">
+                    <i class="fas fa-calendar-check"></i>
+                  </div>
+                  <div class="analytics-info">
+                    <p class="analytics-label">Eventos Activos</p>
+                    <h3>{{ dashboard?.upcomingEvents || 0 }}</h3>
+                    <small>Próximos eventos</small>
+                  </div>
+                </div>
+                <div class="analytics-card">
+                  <div class="analytics-icon occupancy">
+                    <i class="fas fa-percentage"></i>
+                  </div>
+                  <div class="analytics-info">
+                    <p class="analytics-label">Ocupación Media</p>
+                    <h3>{{ dashboard?.averageOccupancy?.toFixed(1) || 0 }}%</h3>
+                    <small>Promedio general</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Gráficos de analítica -->
+              <div class="analytics-charts-grid">
+                <div class="analytics-chart-section full-width">
+                  <div class="chart-header">
+                    <h3 class="chart-section-title">Tendencia de Ventas</h3>
+                    <span class="chart-badge">Evolución temporal</span>
+                  </div>
+                  <div class="chart-canvas-wrapper">
+                    <canvas id="sales-trend-chart"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <div class="analytics-charts-grid">
+                <div class="analytics-chart-section">
+                  <div class="chart-header">
+                    <h3 class="chart-section-title">Top Eventos por Ingresos</h3>
+                    <span class="chart-badge">{{ dashboard?.events?.length || 0 }} eventos</span>
+                  </div>
+                  <div class="chart-canvas-wrapper">
+                    <canvas id="revenue-chart"></canvas>
+                  </div>
+                </div>
+
+                <div class="analytics-chart-section">
+                  <div class="chart-header">
+                    <h3 class="chart-section-title">Rendimiento General</h3>
+                    <span class="chart-badge">Resumen</span>
+                  </div>
+                  <div class="performance-summary">
+                    <div class="performance-item">
+                      <div class="performance-icon">
+                        <i class="fas fa-trophy"></i>
+                      </div>
+                      <div class="performance-info">
+                        <p class="performance-label">Mejor Evento</p>
+                        <h4>{{ dashboard?.topEvent?.title?.length > 15 ? dashboard.topEvent.title.substring(0, 15) + '...' : (dashboard?.topEvent?.title || 'N/A') }}</h4>
+                        <small>{{ formatCurrency(dashboard?.topEvent?.grossRevenue || 0) }}</small>
+                      </div>
+                    </div>
+                    <div class="performance-item">
+                      <div class="performance-icon">
+                        <i class="fas fa-chart-line"></i>
+                      </div>
+                      <div class="performance-info">
+                        <p class="performance-label">Ticket Promedio</p>
+                        <h4>{{ averageTicketPrice }}</h4>
+                        <small>Por ticket vendido</small>
+                      </div>
+                    </div>
+                    <div class="performance-item">
+                      <div class="performance-icon">
+                        <i class="fas fa-percent"></i>
+                      </div>
+                      <div class="performance-info">
+                        <p class="performance-label">Tasa de Conversión</p>
+                        <h4>{{ conversionRate }}%</h4>
+                        <small>Ocupación promedio</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Comparativa de eventos -->
+              <div class="analytics-comparison">
+                <h3 class="section-subtitle">Comparativa de Eventos</h3>
+                <div class="comparison-grid">
+                  <div 
+                    v-for="event in topEventsByRevenue" 
+                    :key="event.id" 
+                    class="comparison-card"
+                  >
+                    <div class="comparison-header">
+                      <h4>{{ event.title.length > 25 ? event.title.substring(0, 25) + '...' : event.title }}</h4>
+                      <span class="comparison-rank">#{{ topEventsByRevenue.indexOf(event) + 1 }}</span>
+                    </div>
+                    <div class="comparison-body">
+                      <div class="comparison-metric">
+                        <span class="metric-name">Ingresos</span>
+                        <span class="metric-value revenue">{{ formatCurrency(event.grossRevenue || 0) }}</span>
+                      </div>
+                      <div class="comparison-metric">
+                        <span class="metric-name">Tickets</span>
+                        <span class="metric-value">{{ event.soldTickets || 0 }}</span>
+                      </div>
+                      <div class="comparison-metric">
+                        <span class="metric-name">Ocupación</span>
+                        <span class="metric-value">{{ event.occupancy?.toFixed(1) || 0 }}%</span>
+                      </div>
+                      <div class="comparison-progress">
+                        <div class="progress">
+                          <div 
+                            class="progress-bar" 
+                            :style="{ width: `${event.occupancy || 0}%` }"
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Sección de Facturación -->
+        <section
+          class="panel-group full-width-panel-group"
+          id="billing"
+          ref="billingSection"
+          v-if="activeSection === 'billing'"
+        >
+          <!-- Título de Facturación -->
+          <div class="dashboard-header">
+            <h1 class="dashboard-title">Facturación</h1>
+            <p class="dashboard-subtitle">Transacciones, pagos y gestión financiera de tus eventos</p>
+          </div>
+
+          <div class="panel performance-panel full-width-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Facturación</p>
+                <h2>Transacciones y Pagos</h2>
+              </div>
+              <button class="btn-outline" @click="refreshBilling" :disabled="billingLoading">
+                <i class="fas fa-sync me-2"></i>Actualizar
+              </button>
+            </div>
+
+            <div v-if="billingLoading" class="panel-loading">
+              <div class="spinner-border text-light" role="status"></div>
+              <p>Cargando transacciones...</p>
+            </div>
+
+            <div v-else-if="!mergedEvents.length" class="panel-empty">
+              <p>No hay eventos con transacciones registradas.</p>
+              <small>Las transacciones aparecerán aquí cuando se realicen compras.</small>
+            </div>
+
+            <div v-else class="billing-content">
+              <div class="billing-summary">
+                <div class="summary-card">
+                  <p class="summary-label">Total Facturado</p>
+                  <h3>{{ formatCurrency(dashboard?.totalRevenue || 0) }}</h3>
+                </div>
+                <div class="summary-card">
+                  <p class="summary-label">Ganancia Neta</p>
+                  <h3>{{ formatCurrency(dashboard?.netRevenue || 0) }}</h3>
+                </div>
+                <div class="summary-card">
+                  <p class="summary-label">Transacciones</p>
+                  <h3>{{ totalTransactions }}</h3>
+                </div>
+              </div>
+
+              <!-- Gráfico de ingresos -->
+              <div class="billing-chart-section">
+                <div class="chart-header">
+                  <h3 class="chart-section-title">Evolución de Ingresos</h3>
+                  <span class="chart-badge">Por evento</span>
+                </div>
+                <div class="chart-canvas-wrapper">
+                  <canvas id="billing-revenue-chart"></canvas>
+                </div>
+              </div>
+
+              <div class="transactions-list">
+                <div class="list-header">
+                  <h3 class="section-subtitle">Transacciones por Evento</h3>
+                  <div class="list-filters">
+                    <button 
+                      class="filter-btn" 
+                      :class="{ active: billingFilter === 'all' }"
+                      @click="billingFilter = 'all'"
+                    >
+                      Todos
+                    </button>
+                    <button 
+                      class="filter-btn" 
+                      :class="{ active: billingFilter === 'active' }"
+                      @click="billingFilter = 'active'"
+                    >
+                      Activos
+                    </button>
+                    <button 
+                      class="filter-btn" 
+                      :class="{ active: billingFilter === 'past' }"
+                      @click="billingFilter = 'past'"
+                    >
+                      Pasados
+                    </button>
+                    <button 
+                      class="filter-btn export-btn" 
+                      @click="exportBillingReport"
+                      title="Exportar reporte"
+                    >
+                      <i class="fas fa-download"></i>
+                      Exportar
+                    </button>
+                  </div>
+                </div>
+                <div class="transaction-item" v-for="event in filteredBillingEvents" :key="event.id">
+                  <div class="transaction-header">
+                    <div class="transaction-title-section">
+                      <h4>{{ event.title }}</h4>
+                      <p class="transaction-meta">{{ event.venue }} · {{ formatDate(event.date, event.time) }}</p>
+                    </div>
+                    <span class="transaction-badge">{{ event.performance?.transactions || 0 }} transacciones</span>
+                  </div>
+                  <div class="transaction-details">
+                    <div class="transaction-detail">
+                      <span class="detail-label">
+                        <i class="fas fa-euro-sign"></i>
+                        Ingresos brutos:
+                      </span>
+                      <span class="detail-value revenue">{{ formatCurrency(event.performance?.grossRevenue || 0) }}</span>
+                    </div>
+                    <div class="transaction-detail">
+                      <span class="detail-label">
+                        <i class="fas fa-ticket-alt"></i>
+                        Tickets vendidos:
+                      </span>
+                      <span class="detail-value">{{ event.performance?.soldTickets || 0 }} / {{ event.availableTickets }}</span>
+                    </div>
+                    <div class="transaction-detail">
+                      <span class="detail-label">
+                        <i class="fas fa-percentage"></i>
+                        Ocupación:
+                      </span>
+                      <span class="detail-value">{{ event.performance?.occupancy?.toFixed(1) || 0 }}%</span>
+                    </div>
+                    <div class="transaction-detail">
+                      <span class="detail-label">
+                        <i class="fas fa-chart-pie"></i>
+                        Ganancia neta:
+                      </span>
+                      <span class="detail-value net">{{ formatCurrency(event.performance?.netRevenue || 0) }}</span>
+                    </div>
+                    <div class="transaction-detail">
+                      <span class="detail-label">
+                        <i class="fas fa-calculator"></i>
+                        Comisiones:
+                      </span>
+                      <span class="detail-value">{{ formatCurrency((event.performance?.grossRevenue || 0) - (event.performance?.netRevenue || 0)) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
       </main>
     </div>
 
@@ -568,6 +1145,8 @@ const events = ref([])
 const dashboardSection = ref(null)
 const eventsSection = ref(null)
 const formSection = ref(null)
+const analyticsSection = ref(null)
+const billingSection = ref(null)
 const showFormPanel = ref(false)
 const expandedEventId = ref(null)
 const attendeesCache = ref({})
@@ -583,6 +1162,75 @@ const selectedEventForModal = ref(null)
 const searchAttendeeQuery = ref('')
 const zoneChartRefs = ref({})
 const occupancyChartRefs = ref({})
+const revenueChartRef = ref(null)
+const categoryChartRef = ref(null)
+const salesTrendChartRef = ref(null)
+const revenueTrendChartRef = ref(null)
+
+// Variables para nuevas secciones
+const analyticsLoading = ref(false)
+const billingLoading = ref(false)
+const billingFilter = ref('all')
+
+const totalTransactions = computed(() => {
+  return mergedEvents.value.reduce((sum, event) => {
+    return sum + (event.performance?.transactions || 0)
+  }, 0)
+})
+
+const averageTicketPrice = computed(() => {
+  const totalRevenue = dashboard.value?.totalRevenue || 0
+  const totalTickets = dashboard.value?.totalTicketsSold || 0
+  if (totalTickets === 0) return formatCurrency(0)
+  return formatCurrency(totalRevenue / totalTickets)
+})
+
+const conversionRate = computed(() => {
+  return dashboard.value?.averageOccupancy?.toFixed(1) || 0
+})
+
+const topEventsByRevenue = computed(() => {
+  if (!dashboard.value?.events?.length) return []
+  return [...dashboard.value.events]
+    .sort((a, b) => (b.grossRevenue || 0) - (a.grossRevenue || 0))
+    .slice(0, 6)
+})
+
+const filteredBillingEvents = computed(() => {
+  const events = mergedEvents.value
+  if (billingFilter.value === 'all') return events
+  
+  const now = new Date()
+  return events.filter(event => {
+    if (!event.date) return false
+    const eventDate = new Date(event.date)
+    if (billingFilter.value === 'active') {
+      return eventDate >= now
+    } else {
+      return eventDate < now
+    }
+  })
+})
+
+const upcomingEvents = computed(() => {
+  const now = new Date()
+  return mergedEvents.value
+    .filter(event => {
+      if (!event.date) return false
+      return new Date(event.date) >= now
+    })
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+})
+
+const pastEvents = computed(() => {
+  const now = new Date()
+  return mergedEvents.value
+    .filter(event => {
+      if (!event.date) return false
+      return new Date(event.date) < now
+    })
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+})
 
 const title = ref('')
 const venue = ref('')
@@ -596,12 +1244,23 @@ const editingEvent = ref(null)
 
 const { getManagedEvents, createEvent, updateEvent, deleteEvent, getEventAttendees } = useEvents()
 const { fetchOverview } = useDashboard()
+const { getEventTransactions } = useTransactions()
+const { getSalesTrend, getEventAnalytics } = useAnalytics()
 
-const navigation = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-chart-line' },
-  { id: 'events', label: 'Eventos', icon: 'fas fa-music' },
-  { id: 'form', label: 'Nuevo evento', icon: 'fas fa-plus-circle' }
-]
+const isSuperUser = computed(() => {
+  const role = (userData.value?.role || '').toLowerCase()
+  return role === 'super_user'
+})
+
+const navigation = computed(() => {
+  return [
+    { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-chart-line', group: 'main' },
+    { id: 'events', label: 'Eventos', icon: 'fas fa-music', group: 'main' },
+    { id: 'form', label: 'Nuevo Evento', icon: 'fas fa-plus-circle', group: 'main' },
+    { id: 'analytics', label: 'Analítica', icon: 'fas fa-chart-bar', group: 'analytics' },
+    { id: 'billing', label: 'Facturación', icon: 'fas fa-file-invoice-dollar', group: 'financial' }
+  ]
+})
 
 const updateViewport = () => {
   if (!process.client) return
@@ -619,7 +1278,9 @@ const scrollToSection = (sectionId) => {
   const target = {
     dashboard: dashboardSection.value,
     events: eventsSection.value,
-    form: formSection.value
+    form: formSection.value,
+    analytics: analyticsSection.value,
+    billing: billingSection.value
   }[sectionId]
 
   if (target) {
@@ -633,9 +1294,18 @@ const goToSection = (sectionId) => {
 }
 
 const handleNavClick = (sectionId) => {
+  // Cerrar formulario si se cambia de sección
+  if (activeSection.value === 'form' && sectionId !== 'form') {
+    showFormPanel.value = false
+    resetForm()
+  }
+  
   if (sectionId === 'form') {
     showFormPanel.value = true
+  } else {
+    showFormPanel.value = false
   }
+  
   goToSection(sectionId)
   if (!isDesktop.value) {
     isSidebarOpen.value = false
@@ -1194,6 +1864,458 @@ const confirmDeletion = async (eventId) => {
   }
 }
 
+// Funciones para nuevas secciones
+const refreshAnalytics = async () => {
+  analyticsLoading.value = true
+  try {
+    await refreshData()
+    await nextTick()
+    createRevenueChart()
+    createSalesTrendChart()
+    createCategoryChart()
+  } catch (error) {
+    errorMessage.value = error?.message || 'No se pudo cargar la analítica'
+  } finally {
+    analyticsLoading.value = false
+  }
+}
+
+const refreshBilling = async () => {
+  billingLoading.value = true
+  try {
+    await refreshData()
+    await nextTick()
+    createBillingRevenueChart()
+  } catch (error) {
+    errorMessage.value = error?.message || 'No se pudo cargar la facturación'
+  } finally {
+    billingLoading.value = false
+  }
+}
+
+const createBillingRevenueChart = async () => {
+  await nextTick()
+  const canvas = document.getElementById('billing-revenue-chart')
+  if (!canvas || !filteredBillingEvents.value.length) return
+
+  if (revenueTrendChartRef.value) {
+    revenueTrendChartRef.value.destroy()
+  }
+
+  const ctx = canvas.getContext('2d')
+  const events = filteredBillingEvents.value
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .slice(0, 12)
+
+  const labels = events.map(e => {
+    if (!e.date) return 'Sin fecha'
+    const date = new Date(e.date)
+    return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })
+  })
+  const revenueData = events.map(e => e.performance?.grossRevenue || 0)
+  const netData = events.map(e => e.performance?.netRevenue || 0)
+
+  try {
+    revenueTrendChartRef.value = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Ingresos Brutos',
+            data: revenueData,
+            borderColor: 'rgba(76, 175, 80, 1)',
+            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4
+          },
+          {
+            label: 'Ganancia Neta',
+            data: netData,
+            borderColor: 'rgba(33, 150, 243, 1)',
+            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              color: 'rgba(255, 255, 255, 0.8)',
+              padding: 15,
+              font: { size: 12 }
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            borderColor: 'rgba(255, 138, 0, 0.5)',
+            borderWidth: 1,
+            callbacks: {
+              label: function(context) {
+                return `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              color: 'rgba(255, 255, 255, 0.7)',
+              callback: function(value) {
+                return formatCurrency(value)
+              }
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            }
+          },
+          x: {
+            ticks: {
+              color: 'rgba(255, 255, 255, 0.7)'
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            }
+          }
+        }
+      }
+    })
+  } catch (error) {
+    console.error('Error creando gráfico de facturación:', error)
+  }
+}
+
+const exportBillingReport = () => {
+  // Crear CSV con datos de facturación
+  let csv = 'Evento,Fecha,Ingresos Brutos,Ganancia Neta,Tickets Vendidos,Ocupación,Transacciones\n'
+  
+  filteredBillingEvents.value.forEach(event => {
+    const title = (event.title || '').replace(/"/g, '""')
+    const date = event.date ? formatDate(event.date, event.time) : 'Sin fecha'
+    const gross = event.performance?.grossRevenue || 0
+    const net = event.performance?.netRevenue || 0
+    const tickets = event.performance?.soldTickets || 0
+    const occupancy = event.performance?.occupancy?.toFixed(1) || 0
+    const transactions = event.performance?.transactions || 0
+    
+    csv += `"${title}","${date}",${gross},${net},${tickets},${occupancy},${transactions}\n`
+  })
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `reporte-facturacion-${new Date().toISOString().split('T')[0]}.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
+
+const createRevenueChart = async () => {
+  await nextTick()
+  const canvas = document.getElementById('revenue-chart')
+  if (!canvas || !dashboard.value?.events?.length) return
+
+  // Destruir gráfico existente
+  if (revenueChartRef.value) {
+    revenueChartRef.value.destroy()
+  }
+
+  const ctx = canvas.getContext('2d')
+  const events = dashboard.value.events
+    .sort((a, b) => b.grossRevenue - a.grossRevenue)
+    .slice(0, 10) // Top 10
+
+  const labels = events.map(e => e.title.length > 20 ? e.title.substring(0, 20) + '...' : e.title)
+  const data = events.map(e => e.grossRevenue)
+
+  try {
+    revenueChartRef.value = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Ingresos (€)',
+          data: data,
+          backgroundColor: 'rgba(255, 138, 0, 0.8)',
+          borderColor: 'rgba(255, 138, 0, 1)',
+          borderWidth: 2,
+          borderRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            borderColor: 'rgba(255, 138, 0, 0.5)',
+            borderWidth: 1,
+            callbacks: {
+              label: function(context) {
+                return `Ingresos: ${formatCurrency(context.parsed.y)}`
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              color: 'rgba(255, 255, 255, 0.7)',
+              callback: function(value) {
+                return formatCurrency(value)
+              }
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            }
+          },
+          x: {
+            ticks: {
+              color: 'rgba(255, 255, 255, 0.7)',
+              maxRotation: 45,
+              minRotation: 45
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            }
+          }
+        }
+      }
+    })
+  } catch (error) {
+    console.error('Error creando gráfico de ingresos:', error)
+  }
+}
+
+const createCategoryChart = async () => {
+  await nextTick()
+  const canvas = document.getElementById('category-chart')
+  if (!canvas || !dashboard.value?.events?.length) return
+
+  if (categoryChartRef.value) {
+    categoryChartRef.value.destroy()
+  }
+
+  const ctx = canvas.getContext('2d')
+  const categoryData = {}
+  
+  dashboard.value.events.forEach(event => {
+    const category = event.category || 'Sin categoría'
+    if (!categoryData[category]) {
+      categoryData[category] = 0
+    }
+    categoryData[category] += event.grossRevenue || 0
+  })
+
+  const labels = Object.keys(categoryData)
+  const data = Object.values(categoryData)
+
+  try {
+    categoryChartRef.value = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: [
+            'rgba(255, 0, 87, 0.8)',
+            'rgba(255, 138, 0, 0.8)',
+            'rgba(0, 200, 255, 0.8)',
+            'rgba(150, 0, 255, 0.8)',
+            'rgba(76, 175, 80, 0.8)'
+          ],
+          borderColor: [
+            'rgba(255, 0, 87, 1)',
+            'rgba(255, 138, 0, 1)',
+            'rgba(0, 200, 255, 1)',
+            'rgba(150, 0, 255, 1)',
+            'rgba(76, 175, 80, 1)'
+          ],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: 'rgba(255, 255, 255, 0.8)',
+              padding: 15,
+              font: { size: 12 }
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            borderColor: 'rgba(255, 138, 0, 0.5)',
+            borderWidth: 1,
+            callbacks: {
+              label: function(context) {
+                const label = context.label || ''
+                const value = context.parsed || 0
+                const total = context.dataset.data.reduce((a, b) => a + b, 0)
+                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0
+                return `${label}: ${formatCurrency(value)} (${percentage}%)`
+              }
+            }
+          }
+        }
+      }
+    })
+  } catch (error) {
+    console.error('Error creando gráfico de categorías:', error)
+  }
+}
+
+const createSalesTrendChart = async () => {
+  await nextTick()
+  const canvas = document.getElementById('sales-trend-chart')
+  if (!canvas || !dashboard.value?.events?.length) return
+
+  if (salesTrendChartRef.value) {
+    salesTrendChartRef.value.destroy()
+  }
+
+  const ctx = canvas.getContext('2d')
+  
+  // Agrupar eventos por mes
+  const monthlyData = {}
+  dashboard.value.events.forEach(event => {
+    if (!event.date) return
+    const date = new Date(event.date)
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    if (!monthlyData[monthKey]) {
+      monthlyData[monthKey] = { tickets: 0, revenue: 0 }
+    }
+    monthlyData[monthKey].tickets += event.soldTickets || 0
+    monthlyData[monthKey].revenue += event.grossRevenue || 0
+  })
+
+  const sortedMonths = Object.keys(monthlyData).sort()
+  const labels = sortedMonths.map(m => {
+    const [year, month] = m.split('-')
+    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    return `${monthNames[parseInt(month) - 1]} ${year}`
+  })
+
+  try {
+    salesTrendChartRef.value = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Tickets Vendidos',
+            data: sortedMonths.map(m => monthlyData[m].tickets),
+            borderColor: 'rgba(255, 138, 0, 1)',
+            backgroundColor: 'rgba(255, 138, 0, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            yAxisID: 'y'
+          },
+          {
+            label: 'Ingresos (€)',
+            data: sortedMonths.map(m => monthlyData[m].revenue),
+            borderColor: 'rgba(255, 0, 87, 1)',
+            backgroundColor: 'rgba(255, 0, 87, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              color: 'rgba(255, 255, 255, 0.8)',
+              padding: 15,
+              font: { size: 12 }
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            borderColor: 'rgba(255, 138, 0, 0.5)',
+            borderWidth: 1
+          }
+        },
+        scales: {
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            ticks: {
+              color: 'rgba(255, 255, 255, 0.7)',
+              stepSize: 1
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            ticks: {
+              color: 'rgba(255, 255, 255, 0.7)',
+              callback: function(value) {
+                return formatCurrency(value)
+              }
+            },
+            grid: {
+              drawOnChartArea: false
+            }
+          },
+          x: {
+            ticks: {
+              color: 'rgba(255, 255, 255, 0.7)'
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            }
+          }
+        }
+      }
+    })
+  } catch (error) {
+    console.error('Error creando gráfico de tendencias:', error)
+  }
+}
+
+
 onMounted(async () => {
   loading.value = true
   loadUser()
@@ -1226,6 +2348,39 @@ onMounted(async () => {
 
   await refreshData()
   loading.value = false
+  
+  // Crear gráficos del dashboard después de cargar datos
+  await nextTick()
+  if (activeSection.value === 'dashboard' && dashboard.value) {
+    setTimeout(() => {
+      createCategoryChart()
+    }, 300)
+  }
+})
+
+// Watch para cargar datos cuando cambia la sección activa
+watch(activeSection, async (newSection) => {
+  if (newSection === 'dashboard' && dashboard.value) {
+    await nextTick()
+    createCategoryChart()
+  }
+  
+  if (newSection === 'analytics' && dashboard.value) {
+    await nextTick()
+    createRevenueChart()
+    createSalesTrendChart()
+  }
+  
+  if (newSection === 'billing' && dashboard.value) {
+    await nextTick()
+    createBillingRevenueChart()
+  }
+  
+  // Cerrar formulario si se cambia a otra sección
+  if (newSection !== 'form' && showFormPanel.value) {
+    showFormPanel.value = false
+    resetForm()
+  }
 })
 
 onUnmounted(() => {
@@ -1242,6 +2397,18 @@ onUnmounted(() => {
       occupancyChartRefs.value[eventId].destroy()
     }
   })
+  if (revenueChartRef.value) {
+    revenueChartRef.value.destroy()
+  }
+  if (categoryChartRef.value) {
+    categoryChartRef.value.destroy()
+  }
+  if (salesTrendChartRef.value) {
+    salesTrendChartRef.value.destroy()
+  }
+  if (revenueTrendChartRef.value) {
+    revenueTrendChartRef.value.destroy()
+  }
   if (process.client) {
     window.removeEventListener('resize', updateViewport)
   }
@@ -1269,23 +2436,24 @@ onUnmounted(() => {
   margin-left: 0;
   margin-right: auto;
   display: grid;
-  grid-template-columns: 270px minmax(0, 1fr);
-  gap: 32px;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 40px;
   align-items: stretch;
   padding: 0 clamp(16px, 4vw, 48px) 40px 0;
 }
 
 .backoffice-sidebar {
-  background: rgba(255, 255, 255, 0.03);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0 24px 24px 0;
-  padding: 0 28px 28px 28px;
+  padding: 32px 24px 32px 24px;
   position: sticky;
   top: 0;
   height: fit-content;
   margin-left: 0;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition: transform 0.3s ease;
+  backdrop-filter: blur(10px);
 }
 
 .backoffice-sidebar.mobile-sidebar {
@@ -1349,10 +2517,21 @@ onUnmounted(() => {
   left: calc(min(320px, 85vw) - 12px);
 }
 
+.sidebar-header {
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 0;
+}
+
 .sidebar-header h2 {
   color: #fff;
   font-size: 1.8rem;
-  margin-bottom: 4px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .sidebar-user span {
@@ -1380,34 +2559,114 @@ onUnmounted(() => {
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin: 24px 0;
+  gap: 28px;
+  margin: 32px 0;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-group-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 8px;
+  padding: 0 4px;
+  font-weight: 600;
+}
+
+.nav-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .nav-chip {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid transparent;
   border-radius: 12px;
-  padding: 12px 16px;
-  color: #f1f1f1;
+  padding: 14px 16px;
+  color: rgba(255, 255, 255, 0.8);
   text-align: left;
   font-weight: 500;
+  font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
 }
 
-.nav-chip i {
-  margin-right: 8px;
+.nav-chip::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(135deg, #ff0057, #ff8a00);
+  transform: scaleY(0);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.nav-chip.active,
 .nav-chip:hover {
-  border-color: rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  transform: translateX(4px);
+}
+
+.nav-chip:hover::before {
+  transform: scaleY(1);
+}
+
+.nav-chip.active {
+  background: linear-gradient(135deg, rgba(255, 0, 87, 0.15), rgba(255, 138, 0, 0.15));
+  border-color: rgba(255, 138, 0, 0.3);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(255, 138, 0, 0.15);
+}
+
+.nav-chip.active::before {
+  transform: scaleY(1);
+}
+
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1rem;
+  transition: transform 0.25s ease;
+}
+
+.nav-chip:hover .nav-icon {
+  transform: scale(1.1);
+}
+
+.nav-chip.active .nav-icon {
+  color: #ff8a00;
+}
+
+.nav-label {
+  flex: 1;
+  font-weight: 500;
+  letter-spacing: 0.2px;
 }
 
 .sidebar-stats {
-  margin-top: 24px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .sidebar-stats h3 {
@@ -1437,19 +2696,21 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 32px;
-  max-width: 980px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
 }
 
 .content-header {
-  background: rgba(255, 255, 255, 0.03);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 24px;
-  padding: 32px;
+  padding: 40px 32px;
   display: flex;
   justify-content: space-between;
   gap: 24px;
   align-items: flex-start;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .content-header h1 {
@@ -1506,17 +2767,287 @@ onUnmounted(() => {
   color: #ff6b6b;
 }
 
+/* Dashboard mejorado */
+.dashboard-section {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.dashboard-header {
+  margin-bottom: 8px;
+}
+
+.dashboard-title {
+  color: #fff;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  background: linear-gradient(135deg, #fff, rgba(255, 255, 255, 0.9));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dashboard-subtitle {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1rem;
+  margin: 0;
+  font-weight: 400;
+}
+
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 18px;
 }
 
+.dashboard-content-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 24px;
+}
+
+.dashboard-panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 28px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.quick-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.summary-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.summary-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 138, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.summary-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.summary-icon.revenue {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(139, 195, 74, 0.2));
+  color: #4caf50;
+}
+
+.summary-icon.tickets {
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.2), rgba(186, 104, 200, 0.2));
+  color: #9c27b0;
+}
+
+.summary-icon.events {
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.2), rgba(100, 181, 246, 0.2));
+  color: #2196f3;
+}
+
+.summary-icon.conversion {
+  background: linear-gradient(135deg, rgba(255, 0, 87, 0.2), rgba(255, 138, 0, 0.2));
+  color: #ff8a00;
+}
+
+.summary-text {
+  flex: 1;
+}
+
+.summary-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  margin: 0 0 4px 0;
+  font-weight: 500;
+}
+
+.summary-text h4 {
+  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.top-event-highlight {
+  margin-top: 8px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(255, 138, 0, 0.15), rgba(255, 0, 87, 0.15));
+  border: 1px solid rgba(255, 138, 0, 0.3);
+  border-radius: 16px;
+}
+
+.highlight-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ff8a00;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.top-event-highlight h3 {
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+}
+
+.highlight-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.highlight-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.highlight-stat .stat-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+}
+
+.highlight-stat .stat-value {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.dashboard-events-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.events-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mini-event-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mini-event-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 138, 0, 0.3);
+  transform: translateX(4px);
+}
+
+.mini-event-image {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.mini-event-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mini-event-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mini-event-info h4 {
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mini-event-info p {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
+  margin: 0 0 6px 0;
+}
+
+.mini-event-stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mini-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+}
+
+.mini-stat i {
+  color: rgba(255, 138, 0, 0.8);
+  font-size: 0.7rem;
+}
+
+.mini-stat.revenue {
+  color: #4caf50;
+  font-weight: 600;
+}
+
 .metric-card {
-  background: rgba(255, 255, 255, 0.03);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
-  padding: 20px;
+  padding: 24px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.metric-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 138, 0, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 138, 0, 0.1);
 }
 
 .metric-icon {
@@ -1554,15 +3085,17 @@ onUnmounted(() => {
 }
 
 .panel {
-  background: rgba(255, 255, 255, 0.03);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 24px;
-  padding: 28px;
+  padding: 32px;
   position: relative;
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .panel-close {
@@ -1582,12 +3115,29 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 320px;
+  min-height: 400px;
 }
 
 .placeholder-content {
   text-align: center;
-  max-width: 360px;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.placeholder-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 0, 87, 0.2), rgba(255, 138, 0, 0.2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff8a00;
+  font-size: 2.5rem;
+  margin-bottom: 8px;
 }
 
 .panel-heading {
@@ -1904,11 +3454,10 @@ onUnmounted(() => {
 }
 
 .form-panel {
-  position: sticky;
-  top: 120px;
-  background: rgba(255, 255, 255, 0.03) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .form-section-header {
@@ -1939,6 +3488,9 @@ onUnmounted(() => {
   border-radius: 20px;
   padding: 32px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .event-form {
@@ -1969,6 +3521,9 @@ onUnmounted(() => {
   transition: all 0.3s ease;
   background: rgba(255, 255, 255, 0.05);
   color: #fff;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .form-input:focus {
@@ -2000,6 +3555,8 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .form-hint {
@@ -2309,6 +3866,20 @@ onUnmounted(() => {
   .form-two-col,
   .form-row {
     grid-template-columns: 1fr;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .form-group {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  
+  .form-input {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
   
   .zone-item {
@@ -3041,6 +4612,607 @@ onUnmounted(() => {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* ============ Estilos para nuevas secciones ============ */
+
+/* Analítica */
+.analytics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.analytics-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.analytics-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.3s ease;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.analytics-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 138, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.analytics-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.analytics-icon.revenue {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(139, 195, 74, 0.2));
+  color: #4caf50;
+}
+
+.analytics-icon.tickets {
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.2), rgba(186, 104, 200, 0.2));
+  color: #9c27b0;
+}
+
+.analytics-icon.events {
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.2), rgba(100, 181, 246, 0.2));
+  color: #2196f3;
+}
+
+.analytics-icon.occupancy {
+  background: linear-gradient(135deg, rgba(255, 0, 87, 0.2), rgba(255, 138, 0, 0.2));
+  color: #ff8a00;
+}
+
+.analytics-info {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.analytics-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  margin: 0 0 4px 0;
+  font-weight: 500;
+}
+
+.analytics-info h3 {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 4px 0;
+  word-break: break-word;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
+
+.analytics-info small {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
+  display: block;
+  margin-top: 2px;
+}
+
+.analytics-charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+.analytics-chart-section.full-width {
+  grid-column: 1 / -1;
+}
+
+.analytics-comparison {
+  margin-top: 32px;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.comparison-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 24px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.comparison-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #ff0057, #ff8a00);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.comparison-card:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.06));
+  border-color: rgba(255, 138, 0, 0.4);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(255, 138, 0, 0.15), 0 0 0 1px rgba(255, 138, 0, 0.1);
+}
+
+.comparison-card:hover::before {
+  opacity: 1;
+}
+
+.comparison-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  position: relative;
+}
+
+.comparison-header h4 {
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  flex: 1;
+  line-height: 1.3;
+  padding-right: 12px;
+}
+
+.comparison-rank {
+  background: linear-gradient(135deg, rgba(255, 0, 87, 0.3), rgba(255, 138, 0, 0.3));
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(255, 138, 0, 0.2);
+  border: 1px solid rgba(255, 138, 0, 0.3);
+}
+
+.comparison-body {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.comparison-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease;
+}
+
+.comparison-card:hover .comparison-metric {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.comparison-metric .metric-name {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.comparison-metric .metric-value {
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+.comparison-metric .metric-value.revenue {
+  color: #4caf50;
+  font-size: 1.2rem;
+}
+
+.comparison-progress {
+  margin-top: 4px;
+  grid-column: 1 / -1;
+}
+
+.comparison-progress .progress {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.comparison-progress .progress-bar {
+  height: 8px;
+  background: linear-gradient(90deg, #ff0057, #ff8a00);
+  border-radius: 999px;
+  position: relative;
+  overflow: hidden;
+}
+
+.comparison-progress .progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.analytics-chart-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 24px;
+  backdrop-filter: blur(10px);
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.chart-section-title {
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.chart-badge {
+  background: rgba(255, 138, 0, 0.2);
+  color: #ff8a00;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.performance-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.performance-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.performance-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 138, 0, 0.3);
+  transform: translateX(4px);
+}
+
+.performance-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 0, 87, 0.2), rgba(255, 138, 0, 0.2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff8a00;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.performance-info {
+  flex: 1;
+}
+
+.performance-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  margin: 0 0 4px 0;
+  font-weight: 500;
+}
+
+.performance-info h4 {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+}
+
+.performance-info small {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
+}
+
+/* Facturación */
+.billing-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.billing-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.summary-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+}
+
+.summary-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  margin: 0 0 8px 0;
+  font-weight: 500;
+}
+
+.summary-card h3 {
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.transactions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.section-subtitle {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.list-filters {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.filter-btn.active {
+  background: linear-gradient(135deg, rgba(255, 0, 87, 0.2), rgba(255, 138, 0, 0.2));
+  border-color: rgba(255, 138, 0, 0.4);
+  color: #ff8a00;
+}
+
+.filter-btn.export-btn {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: rgba(76, 175, 80, 0.4);
+  color: #4caf50;
+}
+
+.filter-btn.export-btn:hover {
+  background: rgba(76, 175, 80, 0.3);
+  color: #66bb6a;
+}
+
+.billing-chart-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 24px;
+  backdrop-filter: blur(10px);
+}
+
+.transaction-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.transaction-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 138, 0, 0.3);
+}
+
+.transaction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+
+.transaction-title-section {
+  flex: 1;
+}
+
+.transaction-header h4 {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 6px 0;
+}
+
+.transaction-meta {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.transaction-badge {
+  background: rgba(255, 138, 0, 0.2);
+  color: #ff8a00;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.transaction-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.transaction-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.detail-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-label i {
+  color: rgba(255, 138, 0, 0.6);
+  font-size: 0.85rem;
+}
+
+.detail-value {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.detail-value.revenue {
+  color: #4caf50;
+  font-size: 1rem;
+}
+
+.detail-value.net {
+  color: #2196f3;
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .analytics-metrics,
+  .billing-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-content-grid,
+  .dashboard-events-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-title {
+    font-size: 2rem;
+  }
+
+  .dashboard-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .summary-row {
+    grid-template-columns: 1fr;
+  }
+
+  .highlight-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .comparison-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .transaction-details {
+    grid-template-columns: 1fr;
+  }
+
+  .list-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .list-filters {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
 }
 </style>
 
