@@ -19,25 +19,16 @@
       <div class="events-wrapper">
         <!-- Filtros en línea horizontal (sin título) -->
         <div class="filters-horizontal">
-          <!-- Búsqueda por nombre -->
-          <div class="search-box-inline">
-            <i class="bi bi-search"></i>
-            <input 
-              v-model="searchQuery" 
-              type="text" 
-              class="search-input" 
-              :placeholder="$t('Busca evento')" 
-            />
-          </div>
-
-          <!-- Búsqueda por ciudad -->
-          <div class="location-box-inline">
-            <i class="bi bi-geo-alt"></i>
-            <input 
-              v-model="locationFilter" 
-              type="text" 
-              class="search-input" 
-              :placeholder="$t('Ciudad')" 
+          <!-- Búsqueda avanzada con autocompletado -->
+          <div class="advanced-search-container">
+            <AdvancedSearch
+              v-model="searchQuery"
+              :events="events"
+              :active-category="activeCategory"
+              :placeholder="$t('Busca eventos, ciudades, venues...')"
+              @select-event="handleEventSelect"
+              @select-location="handleLocationSelect"
+              @select-venue="handleVenueSelect"
             />
           </div>
 
@@ -73,16 +64,16 @@
 
         <!-- Filtros para dispositivos pequeños -->
         <div class="filters-mobile-search">
-          <!-- Búsqueda por nombre -->
-          <div class="search-box-inline">
-            <i class="bi bi-search"></i>
-            <input 
-              v-model="searchQuery" 
-              type="text" 
-              class="search-input" 
-              :placeholder="$t('Busca evento')" 
-            />
-          </div>
+          <!-- Búsqueda avanzada con autocompletado -->
+          <AdvancedSearch
+            v-model="searchQuery"
+            :events="events"
+            :active-category="activeCategory"
+            :placeholder="$t('Busca eventos, ciudades, venues...')"
+            @select-event="handleEventSelect"
+            @select-location="handleLocationSelect"
+            @select-venue="handleVenueSelect"
+          />
         </div>
 
         <div class="filters-mobile-categories">
@@ -205,6 +196,7 @@
 <script setup>
 import { useHead } from '#app'
 import EventCard from '~/components/EventCard.vue'
+import AdvancedSearch from '~/components/AdvancedSearch.vue'
 import phone1 from '~/assets/img/phone1.png'
 
 useHead({
@@ -283,7 +275,7 @@ const resetFilters = () => {
   activeCategory.value = 'all'
 }
 
-// Eventos filtrados con lógica combinada
+// Eventos filtrados con lógica combinada mejorada
 const filteredEvents = computed(() => {
   return events.value.filter((event) => {
     // Filtro de categoría
@@ -292,16 +284,22 @@ const filteredEvents = computed(() => {
       if (!categoryMatch) return false
     }
 
-    // Filtro de búsqueda por nombre
+    // Filtro de búsqueda mejorado (busca en título, descripción, venue, location y categoría)
     if (searchQuery.value.trim()) {
-      const query = searchQuery.value.toLowerCase()
+      const query = searchQuery.value.toLowerCase().trim()
       const titleMatch = event.title?.toLowerCase().includes(query) || false
       const descriptionMatch = event.description?.toLowerCase().includes(query) || false
-      if (!titleMatch && !descriptionMatch) return false
+      const venueMatch = event.venue?.toLowerCase().includes(query) || false
+      const locationMatch = event.location?.toLowerCase().includes(query) || false
+      const categoryMatch = event.category?.toLowerCase().includes(query) || false
+      
+      if (!titleMatch && !descriptionMatch && !venueMatch && !locationMatch && !categoryMatch) {
+        return false
+      }
     }
 
-    // Filtro de ubicación/ciudad
-    if (locationFilter.value.trim()) {
+    // Filtro de ubicación/ciudad (solo si locationFilter está activo y es diferente de searchQuery)
+    if (locationFilter.value.trim() && locationFilter.value !== searchQuery.value) {
       const location = locationFilter.value.toLowerCase()
       const eventLocation = event.location?.toLowerCase() || ''
       const eventVenue = event.venue?.toLowerCase() || ''
@@ -334,6 +332,31 @@ const filtrarEventos = (texto) => {
   } else {
     searchQuery.value = texto
   }
+}
+
+// Handlers para el autocompletado avanzado
+const handleEventSelect = (event) => {
+  // Navegar directamente al evento seleccionado
+  const slug = event.title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+  const router = useRouter()
+  router.push(`/carrito/${slug}`)
+}
+
+const handleLocationSelect = (location) => {
+  // Aplicar el filtro de ubicación
+  locationFilter.value = location
+  searchQuery.value = location
+}
+
+const handleVenueSelect = (venue) => {
+  // Aplicar el filtro de venue
+  locationFilter.value = venue
+  searchQuery.value = venue
 }
 
 // Funcionalidad de descarga de app (PWA Install)
@@ -564,6 +587,12 @@ const getPhoneImageUrl = () => {
   border: none;
   width: 100%;
   box-sizing: border-box;
+}
+
+.advanced-search-container {
+  flex: 1;
+  min-width: 300px;
+  max-width: 600px;
 }
 
 .filters-mobile-search {
@@ -1005,19 +1034,7 @@ const getPhoneImageUrl = () => {
   }
 
   .filters-mobile-search {
-    display: flex;
-    background: #0a0a0a;
-    padding: 12px 8px;
-    margin: 0;
-    box-sizing: border-box;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    align-items: center;
-  }
-
-  .filters-mobile-search .search-box-inline {
-    width: 100%;
-    min-width: auto;
-    padding: 0 8px;
+    display: block;
   }
 
   .filters-mobile-categories {

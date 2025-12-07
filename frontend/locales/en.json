@@ -161,5 +161,15 @@
   "Descarga y gestiona todas tus entradas digitales desde un único lugar.": "Download and manage all your digital tickets from one place.",
   "Cargando tus entradas...": "Loading your tickets...",
   "Descubrir eventos": "Discover events",
-  "Entrada": "Ticket"
+  "Entrada": "Ticket",
+  "Búsquedas recientes": "Recent searches",
+  "Limpiar": "Clear",
+  "Eventos": "Events",
+  "Ciudades": "Cities",
+  "Venues": "Venues",
+  "Limpiar búsqueda": "Clear search",
+  "Busca eventos, ciudades, venues...": "Search events, cities, venues...",
+  "Buscar eventos, ciudades, venues...": "Search events, cities, venues...",
+  "Busca conciertos, ciudades, venues...": "Search concerts, cities, venues...",
+  "Busca festivales, ciudades, venues...": "Search festivals, cities, venues..."
 }

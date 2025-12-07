@@ -68,7 +68,8 @@
           to="/login" 
           class="login-btn-desktop"
         >
-          <i class="bi bi-box-arrow-in-right me-1"></i>{{ $t('Iniciar sesión') }}
+          <i class="bi bi-box-arrow-in-right me-1"></i>
+          <span class="login-btn-text">{{ $t('Iniciar sesión') }}</span>
         </NuxtLink>
 
         <!-- Menú desplegable del perfil -->
@@ -564,6 +565,14 @@ const setLanguage = (lang) => {
   border: none;
 }
 
+.login-btn-text {
+  display: inline;
+}
+
+.login-btn-desktop i {
+  margin-right: 0.5rem;
+}
+
 .login-btn-desktop:hover {
   background: linear-gradient(135deg, #ff1a6b 0%, #ff7b45 100%);
   color: #ffffff;
@@ -672,8 +681,23 @@ const setLanguage = (lang) => {
   }
 
   .login-btn-desktop {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
+    padding: 0.5rem;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .login-btn-desktop .login-btn-text {
+    display: none;
+  }
+
+  .login-btn-desktop i {
+    font-size: 1.1rem;
+    margin-right: 0;
   }
 }
 

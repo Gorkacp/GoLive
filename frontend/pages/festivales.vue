@@ -72,25 +72,16 @@
       <div class="events-wrapper">
         <!-- Filtros en línea horizontal -->
         <div class="filters-horizontal">
-          <!-- Búsqueda por nombre de festival -->
-          <div class="search-box-inline">
-            <i class="bi bi-search"></i>
-            <input 
-              v-model="searchQuery" 
-              type="text" 
-              class="search-input" 
-              :placeholder="$t('Busca festival')" 
-            />
-          </div>
-
-          <!-- Búsqueda por ciudad -->
-          <div class="location-box-inline">
-            <i class="bi bi-geo-alt"></i>
-            <input 
-              v-model="locationFilter" 
-              type="text" 
-              class="search-input" 
-              :placeholder="$t('Ciudad')" 
+          <!-- Búsqueda avanzada con autocompletado -->
+          <div class="advanced-search-container">
+            <AdvancedSearch
+              v-model="searchQuery"
+              :events="festivals"
+              :active-category="'festival'"
+              :placeholder="$t('Busca festivales, ciudades, venues...')"
+              @select-event="handleEventSelect"
+              @select-location="handleLocationSelect"
+              @select-venue="handleVenueSelect"
             />
           </div>
 
@@ -198,15 +189,16 @@
 
         <!-- Filtros para dispositivos pequeños -->
         <div class="filters-mobile-search">
-          <div class="search-box-inline">
-            <i class="bi bi-search"></i>
-            <input 
-              v-model="searchQuery" 
-              type="text" 
-              class="search-input" 
-              :placeholder="$t('Busca festival')" 
-            />
-          </div>
+          <!-- Búsqueda avanzada con autocompletado -->
+          <AdvancedSearch
+            v-model="searchQuery"
+            :events="festivals"
+            :active-category="'festival'"
+            :placeholder="$t('Busca festivales, ciudades, venues...')"
+            @select-event="handleEventSelect"
+            @select-location="handleLocationSelect"
+            @select-venue="handleVenueSelect"
+          />
         </div>
 
         <div class="filters-mobile-categories">
@@ -379,6 +371,7 @@ import { useHead } from '#app'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import EventCard from '~/components/EventCard.vue'
+import AdvancedSearch from '~/components/AdvancedSearch.vue'
 import { formatDateISO } from '~/utils/formatDate'
 
 useHead({
@@ -654,20 +647,26 @@ const filterByDate = (festival) => {
   return festivalDate.toDateString() === selected.toDateString()
 }
 
-// Festivales filtrados
+// Festivales filtrados (mejorado para trabajar con búsqueda avanzada)
 const filteredFestivals = computed(() => {
   return festivals.value.filter((festival) => {
-    // Filtro de búsqueda por nombre o artista
+    // Filtro de búsqueda mejorado (busca en título, descripción, venue, location, artista y categoría)
     if (searchQuery.value.trim()) {
-      const query = searchQuery.value.toLowerCase()
+      const query = searchQuery.value.toLowerCase().trim()
       const titleMatch = festival.title?.toLowerCase().includes(query) || false
       const artistMatch = festival.artist?.toLowerCase().includes(query) || false
       const descriptionMatch = festival.description?.toLowerCase().includes(query) || false
-      if (!titleMatch && !artistMatch && !descriptionMatch) return false
+      const venueMatch = festival.venue?.toLowerCase().includes(query) || false
+      const locationMatch = festival.location?.toLowerCase().includes(query) || false
+      const categoryMatch = festival.category?.toLowerCase().includes(query) || false
+      
+      if (!titleMatch && !artistMatch && !descriptionMatch && !venueMatch && !locationMatch && !categoryMatch) {
+        return false
+      }
     }
 
-    // Filtro de ubicación/ciudad
-    if (locationFilter.value.trim()) {
+    // Filtro de ubicación/ciudad (solo si locationFilter está activo y es diferente de searchQuery)
+    if (locationFilter.value.trim() && locationFilter.value !== searchQuery.value) {
       const location = locationFilter.value.toLowerCase()
       const eventLocation = festival.location?.toLowerCase() || ''
       const eventVenue = festival.venue?.toLowerCase() || ''
@@ -699,6 +698,30 @@ const resetFilters = () => {
 // Filtrar desde el header
 const filtrarEventos = (texto) => {
   searchQuery.value = texto || ''
+}
+
+// Handlers para el autocompletado avanzado
+const handleEventSelect = (event) => {
+  // Navegar directamente al evento seleccionado
+  const slug = event.title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+  router.push(`/carrito/${slug}`)
+}
+
+const handleLocationSelect = (location) => {
+  // Aplicar el filtro de ubicación
+  locationFilter.value = location
+  searchQuery.value = location
+}
+
+const handleVenueSelect = (venue) => {
+  // Aplicar el filtro de venue
+  locationFilter.value = venue
+  searchQuery.value = venue
 }
 
 // Navegar al carrito
@@ -1220,10 +1243,20 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
+.advanced-search-container {
+  flex: 1;
+  min-width: 300px;
+  max-width: 600px;
+}
+
 .filters-mobile-search {
   display: none;
   width: 100%;
   box-sizing: border-box;
+  background: #0a0a0a;
+  padding: 12px 8px;
+  margin: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .filters-mobile-categories {
@@ -2229,19 +2262,12 @@ onMounted(() => {
   }
 
   .filters-mobile-search {
-    display: flex;
-    background: #0a0a0a;
-    padding: 12px 8px;
-    margin: 0;
-    box-sizing: border-box;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    align-items: center;
+    display: block;
   }
 
-  .filters-mobile-search .search-box-inline {
-    width: 100%;
-    min-width: auto;
-    padding: 0 8px;
+  .advanced-search-container {
+    min-width: 100%;
+    max-width: 100%;
   }
 
   .filters-mobile-categories {
@@ -2408,19 +2434,12 @@ onMounted(() => {
   }
 
   .filters-mobile-search {
-    display: flex;
-    background: #0a0a0a;
-    padding: 12px 8px;
-    margin: 0;
-    box-sizing: border-box;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    align-items: center;
+    display: block;
   }
 
-  .filters-mobile-search .search-box-inline {
-    width: 100%;
-    min-width: auto;
-    padding: 0 8px;
+  .advanced-search-container {
+    min-width: 100%;
+    max-width: 100%;
   }
 
   .filters-mobile-categories {
