@@ -2169,9 +2169,17 @@ input:checked + .slider:before {
   }
 
   .avatar {
-    width: 90px;
-    height: 90px;
-    font-size: 40px;
+    width: 150px;
+    height: 150px;
+    font-size: 60px;
+  }
+
+  .avatar-overlay {
+    font-size: 28px;
+  }
+
+  .avatar-overlay span {
+    font-size: 14px;
   }
 
   .user-info h1 {
@@ -2238,9 +2246,17 @@ input:checked + .slider:before {
   }
 
   .avatar {
-    width: 80px;
-    height: 80px;
-    font-size: 32px;
+    width: 130px;
+    height: 130px;
+    font-size: 50px;
+  }
+
+  .avatar-overlay {
+    font-size: 24px;
+  }
+
+  .avatar-overlay span {
+    font-size: 12px;
   }
 
   .user-info h1 {
