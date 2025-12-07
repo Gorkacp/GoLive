@@ -629,6 +629,254 @@
           </div>
         </section>
 
+        <!-- Sección de Notificaciones -->
+        <section
+          class="panel-group full-width-panel-group"
+          id="notifications"
+          ref="notificationsSection"
+          v-if="activeSection === 'notifications'"
+        >
+          <!-- Título de Notificaciones -->
+          <div class="dashboard-header">
+            <h1 class="dashboard-title">Notificaciones</h1>
+            <p class="dashboard-subtitle">Envía notificaciones push a usuarios que han comprado entradas</p>
+          </div>
+
+          <div class="dashboard-content-grid">
+            <!-- Panel de Estadísticas -->
+            <div class="panel dashboard-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Estadísticas</p>
+                  <h2>Usuarios</h2>
+                </div>
+                <button 
+                  class="btn-outline" 
+                  @click="loadNotificationStats" 
+                  :disabled="notificationLoading"
+                >
+                  <i class="fas fa-sync me-2" :class="{ 'fa-spin': notificationLoading }"></i>Actualizar
+                </button>
+              </div>
+
+              <div v-if="notificationLoading" class="panel-loading">
+                <div class="spinner-border text-light" role="status"></div>
+                <p>Cargando estadísticas...</p>
+              </div>
+
+              <div v-else-if="notificationStats" class="notification-stats">
+                <div class="stat-card">
+                  <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                  </div>
+                  <div class="stat-content">
+                    <p class="stat-label">Total de usuarios</p>
+                    <h3>{{ notificationStats.totalUsers || 0 }}</h3>
+                  </div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-icon tickets">
+                    <i class="fas fa-ticket-alt"></i>
+                  </div>
+                  <div class="stat-content">
+                    <p class="stat-label">Con entradas</p>
+                    <h3>{{ notificationStats.usersWithTickets || 0 }}</h3>
+                  </div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-icon no-tickets">
+                    <i class="fas fa-user-slash"></i>
+                  </div>
+                  <div class="stat-content">
+                    <p class="stat-label">Sin entradas</p>
+                    <h3>{{ notificationStats.usersWithoutTickets || 0 }}</h3>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else class="panel-empty small">
+                <p>No hay estadísticas disponibles</p>
+              </div>
+            </div>
+
+            <!-- Panel de Formulario -->
+            <div class="panel dashboard-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Crear Notificación</p>
+                  <h2>Nueva Notificación</h2>
+                </div>
+              </div>
+
+              <form @submit.prevent="sendNotificationForm" class="notification-form">
+                <!-- Tipo de notificación -->
+                <div class="form-group">
+                  <label for="notificationType" class="form-label">
+                    <i class="fas fa-tags me-2"></i>Tipo de Notificación
+                  </label>
+                  <select 
+                    id="notificationType" 
+                    v-model="notificationForm.notificationType" 
+                    class="form-control"
+                    @change="applyNotificationTemplate"
+                  >
+                    <option value="custom">Personalizada</option>
+                    <option value="postponement">Aplazamiento de evento</option>
+                    <option value="few_tickets">Pocas entradas disponibles</option>
+                    <option value="reminder">Recordatorio de evento</option>
+                    <option value="location_change">Cambio de ubicación</option>
+                    <option value="cancellation">Cancelación de evento</option>
+                    <option value="special_offer">Oferta especial</option>
+                  </select>
+                  <small class="form-hint">
+                    Selecciona un tipo para usar una plantilla predefinida o personaliza tu mensaje
+                  </small>
+                </div>
+
+                <!-- Tipo de destinatario -->
+                <div class="form-group">
+                  <label for="targetType" class="form-label">
+                    <i class="fas fa-users me-2"></i>Destinatarios
+                  </label>
+                  <select 
+                    id="targetType" 
+                    v-model="notificationForm.targetType" 
+                    class="form-control"
+                    @change="onTargetTypeChange"
+                  >
+                    <option value="all">Todos los usuarios</option>
+                    <option value="with_tickets">Usuarios con entradas compradas</option>
+                    <option value="event_users">Usuarios de un evento específico</option>
+                  </select>
+                  <small class="form-hint">
+                    <span v-if="notificationForm.targetType === 'all'">
+                      <strong>Todos los usuarios:</strong> Se enviará a todos los usuarios registrados en la plataforma (con o sin entradas compradas). Ideal para anuncios generales u ofertas especiales.
+                    </span>
+                    <span v-else-if="notificationForm.targetType === 'with_tickets'">
+                      <strong>Usuarios con entradas:</strong> Se enviará a todos los usuarios que han comprado al menos una entrada de cualquier evento. No se filtra por evento específico. Útil para comunicaciones generales a clientes activos.
+                    </span>
+                    <span v-else>
+                      <strong>Evento específico:</strong> Se enviará solo a usuarios que han comprado entradas para el evento seleccionado. Perfecto para notificaciones sobre un evento concreto.
+                    </span>
+                  </small>
+                </div>
+
+                <!-- Selector de evento (solo para evento específico) -->
+                <div class="form-group" v-if="notificationForm.targetType === 'event_users'">
+                  <label for="eventId" class="form-label">
+                    <i class="fas fa-music me-2"></i>Evento
+                    <span class="text-danger">*</span>
+                  </label>
+                  <select 
+                    id="eventId" 
+                    v-model="notificationForm.eventId" 
+                    class="form-control"
+                    required
+                    @change="onEventChange"
+                  >
+                    <option value="">Selecciona un evento</option>
+                    <option 
+                      v-for="event in eventsWithTickets" 
+                      :key="event.id" 
+                      :value="event.id"
+                    >
+                      {{ event.title }} - {{ formatDate(event.date, event.time) }} 
+                      ({{ event.performance?.soldTickets || 0 }} entradas vendidas, 
+                      {{ (event.availableTickets || 0) - (event.performance?.soldTickets || 0) }} disponibles)
+                    </option>
+                  </select>
+                  <small class="form-hint">
+                    <strong>Requerido:</strong> Solo se mostrarán eventos futuros con entradas vendidas
+                  </small>
+                </div>
+
+                <!-- Título -->
+                <div class="form-group">
+                  <label for="notificationTitle" class="form-label">
+                    <i class="fas fa-heading me-2"></i>Título
+                  </label>
+                  <input 
+                    id="notificationTitle"
+                    type="text" 
+                    v-model="notificationForm.title" 
+                    class="form-control"
+                    placeholder="Ej: Evento aplazado"
+                    required
+                    maxlength="100"
+                  />
+                  <small class="form-hint">
+                    {{ notificationForm.title.length }}/100 caracteres
+                  </small>
+                </div>
+
+                <!-- Cuerpo -->
+                <div class="form-group">
+                  <label for="notificationBody" class="form-label">
+                    <i class="fas fa-align-left me-2"></i>Mensaje
+                  </label>
+                  <textarea 
+                    id="notificationBody"
+                    v-model="notificationForm.body" 
+                    class="form-control"
+                    rows="5"
+                    placeholder="Ej: Lamentamos informar que el evento se ha aplazado. La nueva fecha será comunicada próximamente."
+                    required
+                    maxlength="500"
+                  ></textarea>
+                  <small class="form-hint">
+                    {{ notificationForm.body.length }}/500 caracteres
+                  </small>
+                </div>
+
+                <!-- Vista previa de URL -->
+                <div class="form-group">
+                  <label class="form-label">
+                    <i class="fas fa-link me-2"></i>URL de destino
+                  </label>
+                  <div class="url-preview">
+                    <code>{{ notificationForm.url || '/' }}</code>
+                  </div>
+                  <small class="form-hint">
+                    Esta es la URL a la que se dirigirá el usuario al hacer clic en la notificación
+                  </small>
+                </div>
+
+                <!-- Mensajes de éxito/error -->
+                <transition name="fade">
+                  <div v-if="notificationSuccess" class="alert success">
+                    <i class="fas fa-check-circle me-2"></i>{{ notificationSuccess }}
+                  </div>
+                </transition>
+                <transition name="fade">
+                  <div v-if="notificationError" class="alert error">
+                    <i class="fas fa-exclamation-triangle me-2"></i>{{ notificationError }}
+                  </div>
+                </transition>
+
+                <!-- Botón de envío -->
+                <div class="form-actions">
+                  <button 
+                    type="submit" 
+                    class="btn-primary"
+                    :disabled="notificationSending || !notificationForm.title || !notificationForm.body || (notificationForm.targetType === 'event_users' && !notificationForm.eventId) || (notificationForm.notificationType === 'few_tickets' && !notificationForm.eventId)"
+                  >
+                    <i class="fas fa-paper-plane me-2" :class="{ 'fa-spin': notificationSending }"></i>
+                    {{ notificationSending ? 'Enviando...' : 'Enviar Notificación' }}
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn-outline"
+                    @click="resetNotificationForm"
+                    :disabled="notificationSending"
+                  >
+                    <i class="fas fa-redo me-2"></i>Limpiar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
         <!-- Sección de Analítica -->
         <section
           class="panel-group full-width-panel-group"
@@ -1145,6 +1393,7 @@ const events = ref([])
 const dashboardSection = ref(null)
 const eventsSection = ref(null)
 const formSection = ref(null)
+const notificationsSection = ref(null)
 const analyticsSection = ref(null)
 const billingSection = ref(null)
 const showFormPanel = ref(false)
@@ -1171,6 +1420,58 @@ const revenueTrendChartRef = ref(null)
 const analyticsLoading = ref(false)
 const billingLoading = ref(false)
 const billingFilter = ref('all')
+
+// Variables para notificaciones
+const notificationStats = ref(null)
+const notificationLoading = ref(false)
+const notificationSending = ref(false)
+const notificationForm = ref({
+  notificationType: 'custom', // 'custom', 'postponement', 'few_tickets', 'reminder', 'location_change', 'cancellation', 'special_offer'
+  title: '',
+  body: '',
+  targetType: 'all', // 'all', 'with_tickets', 'event_users'
+  eventId: null,
+  url: '/'
+})
+const notificationSuccess = ref('')
+const notificationError = ref('')
+const notificationTemplates = {
+  postponement: {
+    title: 'Evento aplazado',
+    body: 'Lamentamos informar que el evento se ha aplazado. La nueva fecha será comunicada próximamente. Mantendremos tu entrada válida para la nueva fecha.',
+    url: '/misEntradas'
+  },
+  few_tickets: {
+    title: '¡Quedan pocas entradas!',
+    body: 'No te quedes sin tu entrada. Quedan muy pocas disponibles. ¡Asegura tu lugar ahora!',
+    url: '/evento/' // Se completará con el eventId
+  },
+  reminder: {
+    title: 'Recordatorio: Tu evento está cerca',
+    body: 'Tu evento se acerca. ¡No olvides asistir! Revisa los detalles en tus entradas.',
+    url: '/misEntradas'
+  },
+  location_change: {
+    title: 'Cambio de ubicación del evento',
+    body: 'El evento ha cambiado de ubicación. Consulta los nuevos detalles en tus entradas. Tu entrada sigue siendo válida.',
+    url: '/misEntradas'
+  },
+  cancellation: {
+    title: 'Evento cancelado',
+    body: 'Lamentamos informar que el evento ha sido cancelado. Se procesará el reembolso completo en un plazo de 5-7 días hábiles.',
+    url: '/misEntradas'
+  },
+  special_offer: {
+    title: 'Oferta especial disponible',
+    body: 'Tenemos una oferta especial para ti. ¡No te la pierdas! Descubre nuestros eventos con descuentos exclusivos.',
+    url: '/'
+  },
+  custom: {
+    title: '',
+    body: '',
+    url: '/'
+  }
+}
 
 const totalTransactions = computed(() => {
   return mergedEvents.value.reduce((sum, event) => {
@@ -1232,6 +1533,13 @@ const pastEvents = computed(() => {
     .sort((a, b) => new Date(b.date) - new Date(a.date))
 })
 
+const eventsWithTickets = computed(() => {
+  return upcomingEvents.value.filter(event => {
+    const soldTickets = event.performance?.soldTickets || 0
+    return soldTickets > 0
+  })
+})
+
 const title = ref('')
 const venue = ref('')
 const location = ref('')
@@ -1246,6 +1554,7 @@ const { getManagedEvents, createEvent, updateEvent, deleteEvent, getEventAttende
 const { fetchOverview } = useDashboard()
 const { getEventTransactions } = useTransactions()
 const { getSalesTrend, getEventAnalytics } = useAnalytics()
+const { sendNotification, getNotificationStats } = useNotifications()
 
 const isSuperUser = computed(() => {
   const role = (userData.value?.role || '').toLowerCase()
@@ -1257,6 +1566,7 @@ const navigation = computed(() => {
     { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-chart-line', group: 'main' },
     { id: 'events', label: 'Eventos', icon: 'fas fa-music', group: 'main' },
     { id: 'form', label: 'Nuevo Evento', icon: 'fas fa-plus-circle', group: 'main' },
+    { id: 'notifications', label: 'Notificaciones', icon: 'fas fa-bell', group: 'main' },
     { id: 'analytics', label: 'Analítica', icon: 'fas fa-chart-bar', group: 'analytics' },
     { id: 'billing', label: 'Facturación', icon: 'fas fa-file-invoice-dollar', group: 'financial' }
   ]
@@ -1279,6 +1589,7 @@ const scrollToSection = (sectionId) => {
     dashboard: dashboardSection.value,
     events: eventsSection.value,
     form: formSection.value,
+    notifications: notificationsSection.value,
     analytics: analyticsSection.value,
     billing: billingSection.value
   }[sectionId]
@@ -1880,6 +2191,215 @@ const refreshAnalytics = async () => {
   }
 }
 
+// Funciones para notificaciones
+const loadNotificationStats = async () => {
+  notificationLoading.value = true
+  notificationError.value = ''
+  try {
+    const stats = await getNotificationStats()
+    notificationStats.value = stats
+  } catch (error) {
+    notificationError.value = error?.data?.error || error?.message || 'No se pudieron cargar las estadísticas'
+    console.error('Error cargando estadísticas de notificaciones:', error)
+  } finally {
+    notificationLoading.value = false
+  }
+}
+
+const applyNotificationTemplate = () => {
+  const template = notificationTemplates[notificationForm.value.notificationType]
+  if (template && notificationForm.value.notificationType !== 'custom') {
+    notificationForm.value.title = template.title
+    notificationForm.value.body = template.body
+    
+    // Para pocas entradas, siempre requiere evento específico
+    if (notificationForm.value.notificationType === 'few_tickets') {
+      notificationForm.value.targetType = 'event_users'
+      if (notificationForm.value.eventId) {
+        notificationForm.value.url = `/evento/${notificationForm.value.eventId}`
+        const selectedEvent = eventsWithTickets.value.find(e => e.id === notificationForm.value.eventId)
+        if (selectedEvent) {
+          const availableTickets = (selectedEvent.availableTickets || 0) - (selectedEvent.performance?.soldTickets || 0)
+          notificationForm.value.title = `¡Quedan pocas entradas para ${selectedEvent.title}!`
+          notificationForm.value.body = `No te quedes sin tu entrada para "${selectedEvent.title}". Solo quedan ${availableTickets} entradas disponibles. ¡Asegura tu lugar ahora!`
+        }
+      } else {
+        notificationForm.value.url = template.url
+        notificationError.value = 'Para notificaciones de pocas entradas, debes seleccionar un evento'
+      }
+    } else {
+      notificationForm.value.url = template.url
+      // Solo personalizar el mensaje si hay un evento seleccionado Y el targetType es event_users
+      if (notificationForm.value.eventId && notificationForm.value.targetType === 'event_users') {
+        const selectedEvent = eventsWithTickets.value.find(e => e.id === notificationForm.value.eventId)
+        if (selectedEvent) {
+          if (notificationForm.value.notificationType === 'postponement') {
+            notificationForm.value.body = `Lamentamos informar que el evento "${selectedEvent.title}" se ha aplazado. La nueva fecha será comunicada próximamente. Mantendremos tu entrada válida para la nueva fecha.`
+          } else if (notificationForm.value.notificationType === 'reminder') {
+            notificationForm.value.title = `Recordatorio: ${selectedEvent.title} está cerca`
+            notificationForm.value.body = `Tu evento "${selectedEvent.title}" se acerca. ¡No olvides asistir! Revisa los detalles en tus entradas.`
+          } else if (notificationForm.value.notificationType === 'location_change') {
+            notificationForm.value.body = `El evento "${selectedEvent.title}" ha cambiado de ubicación. Consulta los nuevos detalles en tus entradas. Tu entrada sigue siendo válida.`
+          } else if (notificationForm.value.notificationType === 'cancellation') {
+            notificationForm.value.body = `Lamentamos informar que el evento "${selectedEvent.title}" ha sido cancelado. Se procesará el reembolso completo en un plazo de 5-7 días hábiles.`
+          }
+        }
+      }
+    }
+  } else if (notificationForm.value.notificationType === 'custom') {
+    // Limpiar errores al cambiar a personalizada
+    notificationError.value = ''
+  }
+}
+
+const onTargetTypeChange = () => {
+  // Limpiar errores previos
+  notificationError.value = ''
+  
+  // Si cambia a "pocas entradas", siempre requiere evento específico
+  if (notificationForm.value.notificationType === 'few_tickets') {
+    notificationForm.value.targetType = 'event_users'
+    // Si no hay evento seleccionado, mostrar mensaje
+    if (!notificationForm.value.eventId) {
+      notificationError.value = 'Para notificaciones de pocas entradas, debes seleccionar un evento específico'
+    }
+  }
+  
+  // Si cambia a "todos los usuarios" o "con entradas", limpiar evento
+  if (notificationForm.value.targetType === 'all' || notificationForm.value.targetType === 'with_tickets') {
+    notificationForm.value.eventId = null
+    // Para "todos" o "con entradas", usar URL por defecto o la de la plantilla
+    if (notificationForm.value.notificationType === 'special_offer') {
+      notificationForm.value.url = '/'
+    } else if (notificationForm.value.notificationType === 'few_tickets') {
+      // Si es pocas entradas pero cambió a "all" o "with_tickets", cambiar tipo de notificación
+      notificationForm.value.notificationType = 'custom'
+      notificationForm.value.url = '/'
+    } else {
+      const template = notificationTemplates[notificationForm.value.notificationType]
+      notificationForm.value.url = template ? template.url : '/'
+    }
+  }
+}
+
+const onEventChange = () => {
+  // Solo procesar si el targetType es event_users
+  if (notificationForm.value.targetType !== 'event_users') return
+  
+  // Actualizar URL según el tipo de notificación y el evento seleccionado
+  if (notificationForm.value.eventId) {
+    const selectedEvent = eventsWithTickets.value.find(e => e.id === notificationForm.value.eventId)
+    
+    if (!selectedEvent) return
+    
+    if (notificationForm.value.notificationType === 'few_tickets') {
+      notificationForm.value.url = `/evento/${notificationForm.value.eventId}`
+      const availableTickets = (selectedEvent.availableTickets || 0) - (selectedEvent.performance?.soldTickets || 0)
+      notificationForm.value.title = `¡Quedan pocas entradas para ${selectedEvent.title}!`
+      notificationForm.value.body = `No te quedes sin tu entrada para "${selectedEvent.title}". Solo quedan ${availableTickets} entradas disponibles. ¡Asegura tu lugar ahora!`
+    } else if (notificationForm.value.notificationType === 'postponement') {
+      notificationForm.value.body = `Lamentamos informar que el evento "${selectedEvent.title}" se ha aplazado. La nueva fecha será comunicada próximamente. Mantendremos tu entrada válida para la nueva fecha.`
+    } else if (notificationForm.value.notificationType === 'reminder') {
+      notificationForm.value.title = `Recordatorio: ${selectedEvent.title} está cerca`
+      notificationForm.value.body = `Tu evento "${selectedEvent.title}" se acerca. ¡No olvides asistir! Revisa los detalles en tus entradas.`
+    } else if (notificationForm.value.notificationType === 'location_change') {
+      notificationForm.value.body = `El evento "${selectedEvent.title}" ha cambiado de ubicación. Consulta los nuevos detalles en tus entradas. Tu entrada sigue siendo válida.`
+    } else if (notificationForm.value.notificationType === 'cancellation') {
+      notificationForm.value.body = `Lamentamos informar que el evento "${selectedEvent.title}" ha sido cancelado. Se procesará el reembolso completo en un plazo de 5-7 días hábiles.`
+    }
+  } else {
+    // Si se deselecciona el evento, volver a la plantilla base
+    if (notificationForm.value.notificationType !== 'custom') {
+      applyNotificationTemplate()
+    }
+  }
+}
+
+const sendNotificationForm = async () => {
+  if (!notificationForm.value.title || !notificationForm.value.body) {
+    notificationError.value = 'Por favor completa todos los campos requeridos'
+    return
+  }
+
+  // Validar según el tipo de destinatario
+  if (notificationForm.value.targetType === 'event_users' && !notificationForm.value.eventId) {
+    notificationError.value = 'Por favor selecciona un evento para notificaciones de evento específico'
+    return
+  }
+
+  // Validar que para "pocas entradas" se requiere evento
+  if (notificationForm.value.notificationType === 'few_tickets' && !notificationForm.value.eventId) {
+    notificationError.value = 'Para notificaciones de pocas entradas, debes seleccionar un evento'
+    return
+  }
+  
+  // Para "todos los usuarios", no se requiere evento
+  if (notificationForm.value.targetType === 'all') {
+    // Asegurar que no se envíe eventId para "all"
+    notificationForm.value.eventId = null
+  }
+
+  notificationSending.value = true
+  notificationError.value = ''
+  notificationSuccess.value = ''
+
+  try {
+    // Construir URL final
+    let finalUrl = notificationForm.value.url || '/'
+    
+    // Si es pocas entradas y hay evento, asegurar que la URL sea correcta
+    if (notificationForm.value.notificationType === 'few_tickets' && notificationForm.value.eventId) {
+      finalUrl = `/evento/${notificationForm.value.eventId}`
+    } else if (notificationForm.value.eventId && notificationForm.value.targetType === 'event_users') {
+      // Para otros tipos con evento, usar misEntradas o la URL personalizada
+      if (['postponement', 'reminder', 'location_change', 'cancellation'].includes(notificationForm.value.notificationType)) {
+        finalUrl = '/misEntradas'
+      } else if (!finalUrl || finalUrl === '/') {
+        finalUrl = `/evento/${notificationForm.value.eventId}`
+      }
+    }
+
+    const payload = {
+      title: notificationForm.value.title.trim(),
+      body: notificationForm.value.body.trim(),
+      targetType: notificationForm.value.targetType,
+      url: finalUrl
+    }
+
+    // Solo incluir eventId si es event_users
+    if (notificationForm.value.targetType === 'event_users') {
+      payload.eventId = notificationForm.value.eventId
+    }
+    // Para "all" y "with_tickets", no se envía eventId
+
+    const response = await sendNotification(payload)
+    
+    notificationSuccess.value = `Notificación enviada correctamente a ${response.sentCount || 0} usuario(s)`
+    resetNotificationForm()
+    
+    // Recargar estadísticas después de enviar
+    await loadNotificationStats()
+  } catch (error) {
+    notificationError.value = error?.data?.error || error?.message || 'Error al enviar la notificación'
+    console.error('Error enviando notificación:', error)
+  } finally {
+    notificationSending.value = false
+  }
+}
+
+const resetNotificationForm = () => {
+  notificationForm.value = {
+    notificationType: 'custom',
+    title: '',
+    body: '',
+    targetType: 'all',
+    eventId: null,
+    url: '/'
+  }
+  notificationError.value = ''
+  notificationSuccess.value = ''
+}
+
 const refreshBilling = async () => {
   billingLoading.value = true
   try {
@@ -2360,6 +2880,9 @@ onMounted(async () => {
 
 // Watch para cargar datos cuando cambia la sección activa
 watch(activeSection, async (newSection) => {
+  if (newSection === 'notifications') {
+    await loadNotificationStats()
+  }
   if (newSection === 'dashboard' && dashboard.value) {
     await nextTick()
     createCategoryChart()
@@ -5213,6 +5736,174 @@ onUnmounted(() => {
     justify-content: flex-start;
     flex-wrap: wrap;
   }
+}
+
+/* Estilos para Notificaciones */
+.notification-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 138, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.2), rgba(100, 181, 246, 0.2));
+  color: #2196f3;
+}
+
+.stat-icon.tickets {
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.2), rgba(186, 104, 200, 0.2));
+  color: #9c27b0;
+}
+
+.stat-icon.no-tickets {
+  background: linear-gradient(135deg, rgba(158, 158, 158, 0.2), rgba(189, 189, 189, 0.2));
+  color: #9e9e9e;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  margin: 0 0 6px 0;
+  font-weight: 500;
+}
+
+.stat-content h3 {
+  color: #fff;
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1;
+}
+
+.notification-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 8px;
+}
+
+.form-control {
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-family: 'Poppins', inherit;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: rgba(255, 0, 87, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 0, 87, 0.1), 0 0 20px rgba(255, 138, 0, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.form-control::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.form-control option {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.form-control select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23fff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.form-control textarea {
+  resize: vertical;
+  min-height: 120px;
+  font-family: 'Poppins', inherit;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.form-actions .btn-primary,
+.form-actions .btn-outline {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .notification-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions .btn-primary,
+  .form-actions .btn-outline {
+    width: 100%;
+  }
+}
+
+.url-preview {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  margin-top: 8px;
+}
+
+.url-preview code {
+  color: #4caf50;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  word-break: break-all;
+}
+
+.notification-form .form-group {
+  position: relative;
+}
+
+.text-danger {
+  color: #ff5252;
+  margin-left: 4px;
 }
 </style>
 
