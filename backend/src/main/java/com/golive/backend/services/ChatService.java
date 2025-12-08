@@ -56,8 +56,8 @@ public class ChatService {
 
         // Verificar si el mensaje contiene información sensible
         if (containsSensitiveKeywords(lowerMessage)) {
-            return "Lo siento, no puedo proporcionar información sobre ganancias, ingresos o datos financieros. " +
-                   "Puedo ayudarte con información sobre eventos, compra de entradas, tus entradas o contacto. ¿En qué más puedo ayudarte?";
+            return "Disculpa, no puedo proporcionar información sobre datos financieros, ganancias o ingresos. " +
+                   "Sin embargo, estaré encantado de ayudarte con información sobre nuestros eventos, el proceso de compra de entradas, la gestión de tus entradas o cualquier otra consulta relacionada con nuestros servicios. ¿En qué más puedo asistirte?";
         }
 
         // Detectar intención
@@ -102,9 +102,9 @@ public class ChatService {
 
     private String getGreetingResponse() {
         List<String> greetings = Arrays.asList(
-            "¡Hola! 👋 Soy el asistente de GoLive. ¿En qué puedo ayudarte?",
-            "¡Bienvenido a GoLive! 🎵 ¿Necesitas ayuda con algo?",
-            "Hola, ¿cómo puedo ayudarte hoy?"
+            "¡Hola! Soy el asistente virtual de GoLive. Estoy aquí para ayudarte con información sobre nuestros eventos, compra de entradas y cualquier consulta que tengas. ¿En qué puedo asistirte hoy?",
+            "Bienvenido a GoLive. Me complace poder ayudarte. ¿Sobre qué te gustaría obtener información?",
+            "Hola, gracias por contactar con GoLive. Estoy a tu disposición para ayudarte con eventos, entradas o cualquier otra consulta. ¿Cómo puedo ayudarte?"
         );
         return greetings.get(new Random().nextInt(greetings.size()));
     }
@@ -121,75 +121,116 @@ public class ChatService {
                 .collect(Collectors.toList());
 
             if (upcomingEvents.isEmpty()) {
-                return "Actualmente no hay eventos disponibles. ¡Vuelve pronto para ver nuevos eventos!";
+                return "En este momento no tenemos eventos programados. Te recomendamos visitar nuestra página web periódicamente para estar al tanto de las nuevas incorporaciones a nuestro calendario.";
             }
 
             // Detectar si pregunta por categoría específica
             String category = detectCategory(message);
-            List<Event> filteredEvents = category != null 
-                ? upcomingEvents.stream()
+            
+            // Detectar si pregunta por mes o fecha específica
+            Integer targetMonth = detectMonth(message);
+            Integer targetYear = detectYear(message);
+            
+            // Filtrar eventos según criterios
+            List<Event> filteredEvents = upcomingEvents;
+            
+            if (category != null) {
+                filteredEvents = filteredEvents.stream()
                     .filter(e -> category.equalsIgnoreCase(e.getCategory()))
-                    .collect(Collectors.toList())
-                : upcomingEvents;
-
-            if (filteredEvents.isEmpty()) {
-                return "No encontré eventos de esa categoría. Tenemos " + upcomingEvents.size() + 
-                       " eventos disponibles. ¿Te interesa algún tipo específico?";
+                    .collect(Collectors.toList());
+            }
+            
+            if (targetMonth != null) {
+                final int month = targetMonth;
+                final int year = targetYear != null ? targetYear : Calendar.getInstance().get(Calendar.YEAR);
+                filteredEvents = filteredEvents.stream()
+                    .filter(e -> {
+                        if (e.getDate() == null) return false;
+                        Calendar cal = Calendar.getInstance();
+                        cal.setTime(e.getDate());
+                        return cal.get(Calendar.MONTH) + 1 == month && 
+                               (targetYear == null || cal.get(Calendar.YEAR) == year);
+                    })
+                    .collect(Collectors.toList());
             }
 
-            // Construir respuesta
-            StringBuilder response = new StringBuilder();
-            if (filteredEvents.size() == 1) {
-                Event event = filteredEvents.get(0);
-                response.append("Tenemos un evento disponible: **").append(event.getTitle()).append("**\n\n");
-                response.append("📍 ").append(event.getVenue() != null ? event.getVenue() : "Venue no especificado").append("\n");
-                if (event.getLocation() != null && !event.getLocation().isEmpty()) {
-                    response.append("🗺️ ").append(event.getLocation()).append("\n");
+            if (filteredEvents.isEmpty()) {
+                StringBuilder noResults = new StringBuilder();
+                if (category != null || targetMonth != null) {
+                    noResults.append("No hemos encontrado eventos");
+                    if (category != null) {
+                        noResults.append(" de la categoría ").append(category);
+                    }
+                    if (targetMonth != null) {
+                        noResults.append(" en ").append(getMonthName(targetMonth));
+                        if (targetYear != null) {
+                            noResults.append(" de ").append(targetYear);
+                        }
+                    }
+                    noResults.append(". ");
                 }
-                response.append("📅 ").append(formatDate(event.getDate())).append("\n");
+                noResults.append("Actualmente tenemos ").append(upcomingEvents.size())
+                         .append(" eventos disponibles en nuestro calendario. ¿Te gustaría que te muestre todos los eventos o prefieres buscar por otra fecha o categoría?");
+                return noResults.toString();
+            }
+
+            // Construir respuesta profesional
+            StringBuilder response = new StringBuilder();
+            
+            // Encabezado profesional
+            if (filteredEvents.size() == 1) {
+                response.append("Perfecto, he encontrado un evento que coincide con tu búsqueda:\n\n");
+            } else {
+                response.append("He encontrado **").append(filteredEvents.size()).append(" eventos**");
+                if (category != null) {
+                    response.append(" de la categoría ").append(category);
+                }
+                if (targetMonth != null) {
+                    response.append(" programados para ").append(getMonthName(targetMonth));
+                    if (targetYear != null) {
+                        response.append(" de ").append(targetYear);
+                    }
+                }
+                response.append(":\n\n");
+            }
+
+            int count = Math.min(filteredEvents.size(), 5);
+            for (int i = 0; i < count; i++) {
+                Event event = filteredEvents.get(i);
+                response.append("**").append(event.getTitle()).append("**\n");
+                response.append("📍 **Ubicación:** ").append(event.getVenue() != null ? event.getVenue() : "Por determinar").append("\n");
+                if (event.getLocation() != null && !event.getLocation().isEmpty()) {
+                    response.append("🗺️ **Dirección:** ").append(event.getLocation()).append("\n");
+                }
+                response.append("📅 **Fecha y hora:** ").append(formatDate(event.getDate())).append("\n");
                 if (event.getZones() != null && !event.getZones().isEmpty()) {
                     double minPrice = event.getZones().stream()
                         .mapToDouble(Event.Zone::getPrice)
                         .min()
                         .orElse(0);
-                    response.append("💰 Desde ").append(String.format("%.2f", minPrice)).append(" €\n");
-                }
-                response.append("\n¿Te interesa? Puedes ver más detalles en la página del evento.");
-            } else {
-                response.append("Tenemos **").append(filteredEvents.size()).append(" eventos** disponibles");
-                if (category != null) {
-                    response.append(" de la categoría ").append(category);
-                }
-                response.append(":\n\n");
-
-                int count = Math.min(filteredEvents.size(), 5);
-                for (int i = 0; i < count; i++) {
-                    Event event = filteredEvents.get(i);
-                    response.append("• **").append(event.getTitle()).append("**\n");
-                    response.append("  📍 ").append(event.getVenue() != null ? event.getVenue() : "Venue no especificado").append("\n");
-                    if (event.getLocation() != null && !event.getLocation().isEmpty()) {
-                        response.append("  🗺️ ").append(event.getLocation()).append("\n");
+                    double maxPrice = event.getZones().stream()
+                        .mapToDouble(Event.Zone::getPrice)
+                        .max()
+                        .orElse(0);
+                    if (minPrice == maxPrice) {
+                        response.append("💰 **Precio:** ").append(String.format("%.2f", minPrice)).append(" €\n");
+                    } else {
+                        response.append("💰 **Precios:** Desde ").append(String.format("%.2f", minPrice))
+                                .append(" € hasta ").append(String.format("%.2f", maxPrice)).append(" €\n");
                     }
-                    response.append("  📅 ").append(formatDate(event.getDate())).append("\n");
-                    if (event.getZones() != null && !event.getZones().isEmpty()) {
-                        double minPrice = event.getZones().stream()
-                            .mapToDouble(Event.Zone::getPrice)
-                            .min()
-                            .orElse(0);
-                        response.append("  💰 Desde ").append(String.format("%.2f", minPrice)).append(" €\n");
-                    }
-                    response.append("\n");
                 }
-
-                if (filteredEvents.size() > 5) {
-                    response.append("Y ").append(filteredEvents.size() - 5).append(" eventos más. ");
-                }
-                response.append("Puedes ver todos los eventos en la página principal.");
+                response.append("\n");
             }
+
+            if (filteredEvents.size() > 5) {
+                response.append("_Y ").append(filteredEvents.size() - 5).append(" evento(s) adicional(es)._\n\n");
+            }
+            
+            response.append("Para obtener más información sobre cualquiera de estos eventos o realizar una compra, puedes visitar nuestra página web o indicarme si necesitas ayuda con algo específico.");
 
             return response.toString();
         } catch (Exception e) {
-            return "Hubo un error al buscar eventos. Por favor, intenta nuevamente o visita la página principal.";
+            return "Disculpa, ha ocurrido un error al procesar tu consulta. Por favor, intenta nuevamente o visita nuestra página web para consultar el calendario de eventos.";
         }
     }
 
@@ -199,35 +240,95 @@ public class ChatService {
         return null;
     }
 
+    private Integer detectMonth(String message) {
+        // Mapeo de meses en español
+        Map<String, Integer> months = new HashMap<>();
+        months.put("enero", 1);
+        months.put("febrero", 2);
+        months.put("marzo", 3);
+        months.put("abril", 4);
+        months.put("mayo", 5);
+        months.put("junio", 6);
+        months.put("julio", 7);
+        months.put("agosto", 8);
+        months.put("septiembre", 9);
+        months.put("octubre", 10);
+        months.put("noviembre", 11);
+        months.put("diciembre", 12);
+        
+        // También detectar "en marzo", "del mes de", etc.
+        for (Map.Entry<String, Integer> entry : months.entrySet()) {
+            if (message.contains(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        
+        // Detectar números de mes (1-12)
+        for (int i = 1; i <= 12; i++) {
+            if (message.contains("/" + i + "/") || 
+                message.contains(" " + i + " ") ||
+                message.matches(".*\\b" + i + "\\b.*")) {
+                return i;
+            }
+        }
+        
+        return null;
+    }
+
+    private Integer detectYear(String message) {
+        // Detectar años (2024, 2025, etc.)
+        java.util.regex.Pattern yearPattern = java.util.regex.Pattern.compile("\\b(20\\d{2})\\b");
+        java.util.regex.Matcher matcher = yearPattern.matcher(message);
+        if (matcher.find()) {
+            try {
+                return Integer.parseInt(matcher.group(1));
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private String getMonthName(int month) {
+        String[] months = {
+            "enero", "febrero", "marzo", "abril", "mayo", "junio",
+            "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+        };
+        if (month >= 1 && month <= 12) {
+            return months[month - 1];
+        }
+        return "";
+    }
+
     private String getPurchaseResponse() {
-        return "Para comprar entradas, simplemente:\n\n" +
-               "1️⃣ Selecciona un evento que te interese\n" +
-               "2️⃣ Elige la zona y cantidad de entradas\n" +
-               "3️⃣ Completa el pago de forma segura\n\n" +
-               "Aceptamos varios métodos de pago. ¿Necesitas ayuda con algún paso específico?";
+        return "Para realizar la compra de entradas, el proceso es el siguiente:\n\n" +
+               "**1.** Selecciona el evento de tu interés desde nuestro calendario\n" +
+               "**2.** Elige la zona y la cantidad de entradas que deseas adquirir\n" +
+               "**3.** Completa el proceso de pago de forma segura a través de nuestra plataforma\n\n" +
+               "Aceptamos diversos métodos de pago para tu comodidad. Si necesitas asistencia en algún paso específico del proceso de compra, estaré encantado de ayudarte.";
     }
 
     private String getTicketsResponse() {
-        return "Puedes ver todas tus entradas en la sección **\"Mis entradas\"** de tu perfil.\n\n" +
-               "Desde ahí podrás:\n" +
-               "• Ver tus entradas digitales\n" +
-               "• Descargar el PDF de tus entradas\n" +
-               "• Ver el código QR\n\n" +
-               "¿Necesitas ayuda para acceder a tus entradas?";
+        return "Puedes consultar y gestionar todas tus entradas desde la sección **\"Mis entradas\"** en tu perfil de usuario.\n\n" +
+               "Desde esta sección tendrás acceso a:\n" +
+               "• Visualización de tus entradas digitales\n" +
+               "• Descarga del comprobante en formato PDF\n" +
+               "• Código QR para el acceso al evento\n\n" +
+               "Si necesitas ayuda para acceder a esta sección o tienes alguna consulta sobre tus entradas, estaré encantado de asistirte.";
     }
 
     private String getContactResponse() {
-        return "Puedes contactarnos de las siguientes formas:\n\n" +
-               "📧 **Email:** soporte@golive.com\n" +
-               "💬 **Chat:** Estoy aquí para ayudarte\n\n" +
-               "Nuestro equipo de soporte está disponible para ayudarte. ¿Cuál es tu consulta?";
+        return "Puedes ponerte en contacto con nuestro equipo de atención al cliente a través de los siguientes canales:\n\n" +
+               "📧 **Correo electrónico:** soporte@golive.com\n" +
+               "💬 **Chat en línea:** Estoy disponible para asistirte en este momento\n\n" +
+               "Nuestro equipo de soporte está a tu disposición para resolver cualquier consulta o incidencia. Por favor, indícame en qué puedo ayudarte específicamente.";
     }
 
     private String getDefaultResponse() {
         List<String> responses = Arrays.asList(
-            "Entiendo. ¿Podrías ser más específico? Puedo ayudarte con eventos, compras, entradas o contacto.",
-            "No estoy seguro de entender. ¿Puedes reformular tu pregunta?",
-            "Puedo ayudarte con información sobre eventos, compra de entradas, tus entradas o contacto. ¿Qué necesitas?"
+            "Agradezco tu consulta. Para poder asistirte de la mejor manera, ¿podrías proporcionarme más detalles? Puedo ayudarte con información sobre eventos, proceso de compra de entradas, gestión de tus entradas o contacto con nuestro equipo de soporte.",
+            "Disculpa, no he podido comprender completamente tu consulta. ¿Serías tan amable de reformular tu pregunta? Estoy aquí para ayudarte con eventos, compras, entradas o cualquier otra consulta relacionada con GoLive.",
+            "Puedo asistirte con información sobre nuestros eventos, el proceso de compra de entradas, la gestión de tus entradas o ponerte en contacto con nuestro equipo de soporte. ¿Sobre qué aspecto te gustaría obtener información?"
         );
         return responses.get(new Random().nextInt(responses.size()));
     }

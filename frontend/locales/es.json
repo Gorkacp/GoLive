@@ -175,5 +175,12 @@
   "Busca festivales, ciudades, venues...": "Busca festivales, ciudades, lugares...",
   "Compartir evento": "Compartir evento",
   "Guardar en favoritos": "Guardar en favoritos",
-  "Copiar enlace": "Copiar enlace"
+  "Copiar enlace": "Copiar enlace",
+  "Eventos Próximos": "Eventos Próximos",
+  "Eventos Pasados": "Eventos Pasados",
+  "Tienes {count} entrada(s) para eventos próximos": "Tienes {count} entrada(s) para eventos próximos",
+  "Historial de {count} entrada(s) de eventos ya realizados": "Historial de {count} entrada(s) de eventos ya realizados",
+  "Email": "Email",
+  "Horario": "Horario",
+  "HorarioTexto": "Lun - Vie: 9:00 - 18:00"
 }

@@ -174,5 +174,12 @@
   "Busca festivales, ciudades, venues...": "Buscar festivais, cidades, locais...",
   "Compartir evento": "Compartilhar evento",
   "Guardar en favoritos": "Salvar nos favoritos",
-  "Copiar enlace": "Copiar link"
+  "Copiar enlace": "Copiar link",
+  "Eventos Próximos": "Próximos Eventos",
+  "Eventos Pasados": "Eventos Passados",
+  "Tienes {count} entrada(s) para eventos próximos": "Você tem {count} ingresso(s) para eventos próximos",
+  "Historial de {count} entrada(s) de eventos ya realizados": "Histórico de {count} ingresso(s) de eventos já realizados",
+  "Email": "Email",
+  "Horario": "Horário",
+  "HorarioTexto": "Seg - Sex: 9:00 - 18:00"
 }

@@ -174,5 +174,12 @@
   "Busca festivales, ciudades, venues...": "Search festivals, cities, venues...",
   "Compartir evento": "Share event",
   "Guardar en favoritos": "Save to favorites",
-  "Copiar enlace": "Copy link"
+  "Copiar enlace": "Copy link",
+  "Eventos Próximos": "Upcoming Events",
+  "Eventos Pasados": "Past Events",
+  "Tienes {count} entrada(s) para eventos próximos": "You have {count} ticket(s) for upcoming events",
+  "Historial de {count} entrada(s) de eventos ya realizados": "History of {count} ticket(s) from past events",
+  "Email": "Email",
+  "Horario": "Schedule",
+  "HorarioTexto": "Mon - Fri: 9:00 - 18:00"
 }

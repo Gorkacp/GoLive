@@ -4,7 +4,7 @@
       <div class="row">
 
         <!-- Sección de información -->
-        <div class="col-lg-3 col-md-6 col-12 mb-4">
+        <div class="col-lg-3 col-md-6 col-12 mb-3 mb-md-4">
           <h5 class="fw-bold footer-title">GoLive</h5>
           <p class="footer-description">{{ $t('GoLiveInfo') }}</p>
           <div class="footer-logo d-none d-md-block">
@@ -13,52 +13,61 @@
         </div>
 
         <!-- Sección de enlaces rápidos -->
-        <div class="col-lg-2 col-md-6 col-6 mb-4">
+        <div class="col-lg-2 col-md-6 col-6 mb-3 mb-md-4">
           <h5 class="fw-bold footer-title">{{ $t('Enlaces') }}</h5>
           <ul class="list-unstyled footer-links">
             <li><NuxtLink to="/" class="footer-link">{{ $t('Inicio') }}</NuxtLink></li>
             <li><NuxtLink to="/conciertos" class="footer-link">{{ $t('Conciertos') }}</NuxtLink></li>
             <li><NuxtLink to="/festivales" class="footer-link">{{ $t('Festivales') }}</NuxtLink></li>
-            <li><NuxtLink to="/blog" class="footer-link">{{ $t('Blog') }}</NuxtLink></li>
           </ul>
         </div>
 
         <!-- Sección de soporte -->
-        <div class="col-lg-2 col-md-6 col-6 mb-4">
+        <div class="col-lg-2 col-md-6 col-6 mb-3 mb-md-4">
           <h5 class="fw-bold footer-title">{{ $t('Soporte') || 'Soporte' }}</h5>
           <ul class="list-unstyled footer-links">
             <li><a href="#" class="footer-link">{{ $t('Ayuda') || 'Ayuda' }}</a></li>
-            <li><a href="#" class="footer-link">{{ $t('Contacto') || 'Contacto' }}</a></li>
             <li><a href="#" class="footer-link">{{ $t('Términos') || 'Términos y Condiciones' }}</a></li>
             <li><a href="#" class="footer-link">{{ $t('Privacidad') || 'Política de Privacidad' }}</a></li>
           </ul>
         </div>
 
-        <!-- Newsletter -->
-        <div class="col-lg-3 col-md-6 col-12 mb-4">
-          <h5 class="fw-bold footer-title">{{ $t('Newsletter') || 'Newsletter' }}</h5>
-          <p class="footer-newsletter-text">{{ $t('NewsletterText') || 'Recibe las últimas novedades y ofertas exclusivas' }}</p>
-          <form @submit.prevent="subscribeNewsletter" class="newsletter-form">
-            <div class="input-group">
-              <input 
-                type="email" 
-                v-model="newsletterEmail"
-                :placeholder="$t('TuEmail') || 'Tu email'"
-                class="form-control newsletter-input"
-                required
-              >
-              <button type="submit" class="btn newsletter-btn">
-                <i class="bi bi-send"></i>
-              </button>
+        <!-- Sección de Contacto -->
+        <div class="col-lg-3 col-md-6 col-12 mb-3 mb-md-4">
+          <h5 class="fw-bold footer-title">{{ $t('Contacto') || 'Contacto' }}</h5>
+          <div class="contact-info">
+            <div class="contact-item">
+              <div class="contact-icon">
+                <i class="bi bi-envelope"></i>
+              </div>
+              <div class="contact-details">
+                <span class="contact-label">{{ $t('Email') || 'Email' }}</span>
+                <a href="mailto:info@golive.com" class="contact-link">info@golive.com</a>
+              </div>
             </div>
-            <div v-if="newsletterMessage" class="newsletter-message mt-2">
-              {{ newsletterMessage }}
+            <div class="contact-item">
+              <div class="contact-icon">
+                <i class="bi bi-telephone"></i>
+              </div>
+              <div class="contact-details">
+                <span class="contact-label">{{ $t('Teléfono') || 'Teléfono' }}</span>
+                <a href="tel:+34900123456" class="contact-link">+34 900 123 456</a>
+              </div>
             </div>
-          </form>
+            <div class="contact-item">
+              <div class="contact-icon">
+                <i class="bi bi-clock"></i>
+              </div>
+              <div class="contact-details">
+                <span class="contact-label">{{ $t('Horario') || 'Horario' }}</span>
+                <span class="contact-text">{{ $t('HorarioTexto') || 'Lun - Vie: 9:00 - 18:00' }}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Sección de redes sociales -->
-        <div class="col-lg-2 col-md-6 col-12 mb-4">
+        <div class="col-lg-2 col-md-6 col-12 mb-3 mb-md-4">
           <h5 class="fw-bold footer-title">{{ $t('Síguenos') || 'Síguenos' }}</h5>
           <div class="social-links">
             <a href="#" class="social-link" aria-label="Facebook">
@@ -82,7 +91,7 @@
       </div>
 
       <!-- Línea de copyright -->
-      <div class="text-center mt-4 pt-3 border-top border-secondary">
+      <div class="text-center footer-copyright mt-3 mt-md-4 pt-3 border-top border-secondary">
         <small>&copy; 2025 GoLive. {{ $t('Copyright') }}</small>
         <div class="version-text mt-1">
           <small>Versión {{ version }}</small>
@@ -97,19 +106,6 @@ import { ref } from 'vue'
 import packageInfo from '~/package.json'
 
 const version = packageInfo.version || 'Desarrollo'
-const newsletterEmail = ref('')
-const newsletterMessage = ref('')
-
-const subscribeNewsletter = () => {
-  // Aquí puedes integrar con tu backend para guardar el email
-  if (newsletterEmail.value) {
-    newsletterMessage.value = '¡Gracias por suscribirte!'
-    newsletterEmail.value = ''
-    setTimeout(() => {
-      newsletterMessage.value = ''
-    }, 3000)
-  }
-}
 </script>
 
 <style scoped>
@@ -119,12 +115,27 @@ const subscribeNewsletter = () => {
   background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%);
   font-family: 'Poppins', sans-serif;
   border-top: 1px solid rgba(255, 0, 87, 0.2);
-  padding: 2rem 0 1rem 0;
+  padding: 2rem 0 0 0;
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .footer-custom .container {
-  padding-left: 1rem;
-  padding-right: 1rem;
+  padding-left: 0;
+  padding-right: 0;
+  max-width: 100%;
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 769px) {
+  .footer-custom .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 }
 
 .footer-title {
@@ -205,64 +216,6 @@ const subscribeNewsletter = () => {
   width: 8px;
 }
 
-.footer-newsletter-text {
-  color: #b0b0b0;
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
-}
-
-.newsletter-form {
-  margin-top: 1rem;
-}
-
-.newsletter-form .input-group {
-  display: flex;
-  width: 100%;
-}
-
-.newsletter-input {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  border-radius: 25px 0 0 25px;
-  padding: 0.6rem 1rem;
-  font-size: 0.9rem;
-  flex: 1;
-  min-width: 0;
-  border-right: none;
-}
-
-.newsletter-input::placeholder {
-  color: #888;
-}
-
-.newsletter-input:focus {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: #ff0057;
-  color: #ffffff;
-  box-shadow: 0 0 0 0.2rem rgba(255, 0, 87, 0.25);
-}
-
-.newsletter-btn {
-  background: linear-gradient(135deg, #ff0057 0%, #ff6b35 100%);
-  border: none;
-  border-radius: 0 25px 25px 0;
-  color: #ffffff;
-  padding: 0.6rem 1.2rem;
-  transition: all 0.3s ease;
-}
-
-.newsletter-btn:hover {
-  background: linear-gradient(135deg, #ff1a6b 0%, #ff7b45 100%);
-  transform: scale(1.05);
-}
-
-.newsletter-message {
-  color: #4ade80;
-  font-size: 0.85rem;
-  text-align: center;
-}
-
 .social-links {
   display: flex;
   gap: 1rem;
@@ -302,14 +255,124 @@ footer a:hover {
   font-size: 0.85rem;
 }
 
+.footer-copyright {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .footer-copyright {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    padding-bottom: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .footer-copyright {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-bottom: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-copyright {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-bottom: 0.75rem;
+  }
+}
+
+/* Estilos para la sección de contacto */
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.contact-item:hover {
+  transform: translateX(3px);
+}
+
+.contact-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(255, 0, 87, 0.15), rgba(255, 107, 53, 0.15));
+  color: #ff6b35;
+  font-size: 1rem;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.contact-item:hover .contact-icon {
+  background: linear-gradient(135deg, rgba(255, 0, 87, 0.25), rgba(255, 107, 53, 0.25));
+  transform: scale(1.1);
+}
+
+.contact-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.contact-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+  margin-bottom: 0.2rem;
+}
+
+.contact-link {
+  color: #b0b0b0;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  display: inline-block;
+  word-break: break-word;
+}
+
+.contact-link:hover {
+  color: #ff0057;
+  text-decoration: none;
+  transform: translateX(2px);
+}
+
+.contact-text {
+  color: #b0b0b0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
 @media (max-width: 768px) {
   .footer-custom {
-    padding: 1.5rem 0 1rem 0;
+    padding: 1.5rem 0 0 0;
+    margin: 0;
   }
 
   .footer-custom .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-left: 0;
+    padding-right: 0;
+    max-width: 100%;
+    margin: 0;
   }
 
   .footer-custom .row {
@@ -318,25 +381,28 @@ footer a:hover {
   }
 
   .footer-custom .row > div {
-    padding-left: 0;
-    padding-right: 0;
-    margin-bottom: 1.5rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    margin-bottom: 1.25rem;
   }
 
   .footer-title {
-    font-size: 0.95rem;
-    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    margin-bottom: 0.65rem;
     padding-bottom: 0.4rem;
+    font-weight: 600;
   }
 
   .footer-title::after {
     width: 30px;
+    height: 2px;
   }
 
   .footer-description {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     line-height: 1.5;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
+    color: #c0c0c0;
   }
 
   .footer-logo {
@@ -357,39 +423,13 @@ footer a:hover {
 
   .footer-link {
     font-size: 0.85rem;
-  }
-
-  .footer-newsletter-text {
-    font-size: 0.8rem;
-    margin-bottom: 0.75rem;
-    line-height: 1.4;
-  }
-
-  .newsletter-form {
-    margin-top: 0.5rem;
-  }
-
-  .newsletter-form .input-group {
-    flex-wrap: nowrap;
-  }
-
-  .newsletter-input {
-    padding: 0.5rem 0.85rem;
-    font-size: 0.85rem;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .newsletter-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
-    flex-shrink: 0;
-    white-space: nowrap;
+    padding: 0.15rem 0;
+    color: #d0d0d0;
   }
 
   .social-links {
     justify-content: flex-start;
-    gap: 0.75rem;
+    gap: 0.7rem;
     margin-top: 0.5rem;
   }
 
@@ -399,53 +439,105 @@ footer a:hover {
     font-size: 1.1rem;
   }
 
-  .footer-custom .text-center {
-    padding-top: 1rem !important;
-    margin-top: 1rem !important;
+  .contact-info {
+    gap: 0.85rem;
+    margin-top: 0.5rem;
+  }
+
+  .contact-item {
+    gap: 0.65rem;
+    align-items: center;
+  }
+
+  .contact-icon {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    font-size: 0.85rem;
+    border-radius: 8px;
+  }
+
+  .contact-label {
+    font-size: 0.65rem;
+    margin-bottom: 0.2rem;
+    color: #999;
+  }
+
+  .contact-link,
+  .contact-text {
+    font-size: 0.8rem;
+    color: #d0d0d0;
+    line-height: 1.4;
+  }
+
+  .footer-copyright {
+    padding: 1rem 1.25rem 1rem 1.25rem !important;
+    margin: 0 !important;
   }
 
   .footer-custom .text-center small {
     font-size: 0.75rem;
+    color: #b0b0b0;
+    display: block;
+    line-height: 1.5;
   }
 
   .version-text {
-    font-size: 0.75rem;
-    margin-top: 0.5rem;
+    font-size: 0.7rem;
+    margin-top: 0.4rem;
+    color: #888;
   }
 }
 
 @media (max-width: 576px) {
   .footer-custom {
-    padding: 1.25rem 0 0.75rem 0;
+    padding: 1.25rem 0 0 0;
+    margin: 0;
   }
 
   .footer-custom .container {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
+    padding-left: 0;
+    padding-right: 0;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .footer-custom .row {
+    margin-left: 0;
+    margin-right: 0;
   }
 
   .footer-custom .row > div {
-    margin-bottom: 1.25rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    margin-bottom: 1rem;
   }
 
   .footer-title {
-    font-size: 0.9rem;
-    margin-bottom: 0.6rem;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
     padding-bottom: 0.35rem;
+    font-weight: 600;
   }
 
   .footer-title::after {
-    width: 25px;
-    height: 1.5px;
+    width: 28px;
+    height: 2px;
   }
 
   .footer-description {
-    font-size: 0.8rem;
-    margin-bottom: 0.6rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    margin-bottom: 0.5rem;
+    color: #c0c0c0;
   }
 
   .logo-text {
     font-size: 1.1rem;
+  }
+
+  .footer-links {
+    margin-top: 0.4rem;
   }
 
   .footer-links li {
@@ -454,35 +546,13 @@ footer a:hover {
 
   .footer-link {
     font-size: 0.8rem;
-  }
-
-  .footer-newsletter-text {
-    font-size: 0.75rem;
-    margin-bottom: 0.6rem;
-  }
-
-  .newsletter-form .input-group {
-    flex-wrap: nowrap;
-  }
-
-  .newsletter-input {
-    padding: 0.45rem 0.75rem;
-    font-size: 0.8rem;
-    border-radius: 20px 0 0 20px;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .newsletter-btn {
-    padding: 0.45rem 0.9rem;
-    font-size: 0.85rem;
-    border-radius: 0 20px 20px 0;
-    flex-shrink: 0;
-    white-space: nowrap;
+    padding: 0.1rem 0;
+    color: #d0d0d0;
   }
 
   .social-links {
     gap: 0.6rem;
+    margin-top: 0.4rem;
   }
 
   .social-link {
@@ -491,75 +561,177 @@ footer a:hover {
     font-size: 1rem;
   }
 
-  .footer-custom .text-center {
-    padding-top: 0.75rem !important;
-    margin-top: 0.75rem !important;
+  .contact-info {
+    gap: 0.7rem;
+    margin-top: 0.4rem;
+  }
+
+  .contact-item {
+    gap: 0.6rem;
+    align-items: center;
+  }
+
+  .contact-icon {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    font-size: 0.8rem;
+    border-radius: 7px;
+  }
+
+  .contact-label {
+    font-size: 0.6rem;
+    margin-bottom: 0.15rem;
+    color: #999;
+  }
+
+  .contact-link,
+  .contact-text {
+    font-size: 0.75rem;
+    color: #d0d0d0;
+    line-height: 1.4;
+  }
+
+  .footer-copyright {
+    padding: 0.875rem 1rem 0.875rem 1rem !important;
+    margin: 0 !important;
   }
 
   .footer-custom .text-center small {
     font-size: 0.7rem;
     display: block;
+    line-height: 1.5;
+    color: #b0b0b0;
     margin-bottom: 0.25rem;
   }
 
   .version-text {
-    font-size: 0.7rem;
-    margin-top: 0.4rem;
+    font-size: 0.65rem;
+    margin-top: 0.3rem;
+    color: #888;
   }
 }
 
 @media (max-width: 480px) {
   .footer-custom {
-    padding: 1rem 0 0.5rem 0;
+    padding: 1rem 0 0 0;
+    margin: 0;
   }
 
   .footer-custom .container {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
+    padding-left: 0;
+    padding-right: 0;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .footer-custom .row {
+    margin-left: 0;
+    margin-right: 0;
   }
 
   .footer-custom .row > div {
-    margin-bottom: 1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    margin-bottom: 0.875rem;
   }
 
   .footer-title {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    margin-bottom: 0.45rem;
+    padding-bottom: 0.3rem;
+    font-weight: 600;
+  }
+
+  .footer-title::after {
+    width: 25px;
+    height: 2px;
   }
 
   .footer-description {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    margin-bottom: 0.4rem;
+    color: #c0c0c0;
   }
 
   .logo-text {
     font-size: 1rem;
   }
 
+  .footer-links {
+    margin-top: 0.35rem;
+  }
+
+  .footer-links li {
+    margin-bottom: 0.3rem;
+  }
+
   .footer-link {
     font-size: 0.75rem;
+    padding: 0.1rem 0;
+    color: #d0d0d0;
   }
 
-  .newsletter-form .input-group {
-    flex-wrap: nowrap;
-  }
-
-  .newsletter-input {
-    font-size: 0.75rem;
-    padding: 0.4rem 0.7rem;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .newsletter-btn {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
-    flex-shrink: 0;
-    white-space: nowrap;
+  .social-links {
+    gap: 0.55rem;
+    margin-top: 0.35rem;
   }
 
   .social-link {
     width: 32px;
     height: 32px;
     font-size: 0.95rem;
+  }
+
+  .contact-info {
+    gap: 0.65rem;
+    margin-top: 0.35rem;
+  }
+
+  .contact-item {
+    gap: 0.55rem;
+    align-items: center;
+  }
+
+  .contact-icon {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    font-size: 0.75rem;
+    border-radius: 6px;
+  }
+
+  .contact-label {
+    font-size: 0.58rem;
+    margin-bottom: 0.1rem;
+    color: #999;
+  }
+
+  .contact-link,
+  .contact-text {
+    font-size: 0.7rem;
+    color: #d0d0d0;
+    line-height: 1.4;
+  }
+
+  .footer-copyright {
+    padding: 0.75rem 1rem 0.75rem 1rem !important;
+    margin: 0 !important;
+  }
+
+  .footer-custom .text-center small {
+    font-size: 0.68rem;
+    display: block;
+    line-height: 1.5;
+    color: #b0b0b0;
+    margin-bottom: 0.2rem;
+  }
+
+  .version-text {
+    font-size: 0.62rem;
+    margin-top: 0.25rem;
+    color: #888;
   }
 }
 </style>

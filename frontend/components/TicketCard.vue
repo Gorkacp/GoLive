@@ -200,6 +200,14 @@ const downloadTicket = () => {
   min-height: 130px;
 }
 
+@media (max-width: 640px) {
+  .ticket-card__header {
+    min-height: 100px;
+    padding: 12px;
+    gap: 12px;
+  }
+}
+
 .ticket-card__eyebrow {
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -212,6 +220,15 @@ const downloadTicket = () => {
   font-size: 1.4rem;
   font-weight: 700;
   margin: 0;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .ticket-card__event {
+    font-size: 1.1rem;
+    line-height: 1.2;
+  }
 }
 
 .ticket-card__venue,
@@ -219,6 +236,14 @@ const downloadTicket = () => {
   margin: 0;
   color: #d1d5db;
   font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .ticket-card__venue,
+  .ticket-card__location {
+    font-size: 0.85rem;
+  }
 }
 
 .ticket-card__number {
@@ -450,27 +475,81 @@ const downloadTicket = () => {
 
 @media (max-width: 640px) {
   .ticket-card {
-    padding: 14px;
+    padding: 12px;
+    gap: 10px;
+    border-radius: 12px;
   }
 
   .ticket-card__header {
     flex-direction: column;
     text-align: left;
+    min-height: 90px;
+    padding: 10px;
+    gap: 8px;
+    border-radius: 10px;
+  }
+
+  .ticket-card__eyebrow {
+    font-size: 0.65rem;
+    margin-bottom: 4px;
   }
 
   .ticket-card__number {
     text-align: left;
+    font-size: 0.7rem;
+  }
+
+  .ticket-card__number strong {
+    font-size: 1rem;
+  }
+
+  .ticket-card__body {
+    gap: 10px;
+  }
+
+  .ticket-card__info {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .ticket-card__section {
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+
+  .label {
+    font-size: 0.7rem;
+  }
+
+  .value {
+    font-size: 0.95rem;
+  }
+
+  .ticket-card__section small {
+    font-size: 0.75rem;
   }
 
   .ticket-card__meta {
     flex-direction: column;
     align-items: flex-start;
     width: 100%;
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .ticket-card__total .value {
+    font-size: 1.15rem;
   }
 
   .ticket-card__meta .ticket-card__button {
     width: 100%;
     justify-content: center;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
+
+  .ticket-card__button span {
+    font-size: 0.9rem;
   }
 
   .ticket-modal {

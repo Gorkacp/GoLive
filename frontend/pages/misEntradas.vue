@@ -17,7 +17,7 @@
           <h1>{{ $t('Mis Entradas') }}</h1>
           <p>{{ $t('Descarga y gestiona todas tus entradas digitales desde un único lugar.') }}</p>
         </div>
-        <NuxtLink class="cta" to="/eventos">
+        <NuxtLink class="cta" to="/conciertos">
           <i class="bi bi-plus-circle"></i> {{ $t('Descubrir eventos') }}
         </NuxtLink>
       </div>
@@ -36,13 +36,67 @@
       <div v-else-if="!tickets.length" class="state-card state-card--empty">
         <i class="bi bi-ticket-perforated"></i>
         <p>{{ $t('Aún no tienes entradas disponibles.') }}</p>
-        <NuxtLink class="cta" to="/eventos">
+        <NuxtLink class="cta" to="/conciertos">
           {{ $t('Explorar eventos') }}
         </NuxtLink>
       </div>
 
-      <div v-else class="tickets-grid">
-        <TicketCard v-for="ticket in tickets" :key="ticket.id" :ticket="ticket" />
+      <div v-else class="tickets-sections">
+        <!-- Eventos Próximos -->
+        <section v-if="upcomingTickets.length > 0" class="tickets-section">
+          <div class="section-header">
+            <div class="section-header__content">
+              <div class="section-header__icon upcoming">
+                <i class="bi bi-calendar-event"></i>
+              </div>
+              <div>
+                <h2 class="section-header__title">{{ $t('Eventos Próximos') }}</h2>
+                <p class="section-header__subtitle">
+                  {{ $t('Tienes {count} entrada(s) para eventos próximos', { count: upcomingTickets.length }) }}
+                </p>
+              </div>
+            </div>
+            <div class="section-header__badge">
+              <span class="badge badge--upcoming">{{ upcomingTickets.length }}</span>
+            </div>
+          </div>
+          <div class="tickets-grid">
+            <TicketCard 
+              v-for="ticket in upcomingTickets" 
+              :key="ticket.id" 
+              :ticket="ticket"
+              class="ticket-card--upcoming"
+            />
+          </div>
+        </section>
+
+        <!-- Eventos Pasados -->
+        <section v-if="pastTickets.length > 0" class="tickets-section">
+          <div class="section-header">
+            <div class="section-header__content">
+              <div class="section-header__icon past">
+                <i class="bi bi-clock-history"></i>
+              </div>
+              <div>
+                <h2 class="section-header__title">{{ $t('Eventos Pasados') }}</h2>
+                <p class="section-header__subtitle">
+                  {{ $t('Historial de {count} entrada(s) de eventos ya realizados', { count: pastTickets.length }) }}
+                </p>
+              </div>
+            </div>
+            <div class="section-header__badge">
+              <span class="badge badge--past">{{ pastTickets.length }}</span>
+            </div>
+          </div>
+          <div class="tickets-grid tickets-grid--past">
+            <TicketCard 
+              v-for="ticket in pastTickets" 
+              :key="ticket.id" 
+              :ticket="ticket"
+              class="ticket-card--past"
+            />
+          </div>
+        </section>
       </div>
     </div>
     <Footer />
@@ -69,6 +123,33 @@ const normalizeApiBase = (base) => {
   return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`
 }
 const apiBase = normalizeApiBase(config.public.apiBase || 'http://localhost:8085')
+
+// Separar tickets en próximos y pasados
+const upcomingTickets = computed(() => {
+  const now = new Date()
+  return tickets.value.filter(ticket => {
+    if (!ticket.eventDate) return false
+    const eventDate = new Date(ticket.eventDate)
+    return eventDate >= now
+  }).sort((a, b) => {
+    const dateA = new Date(a.eventDate)
+    const dateB = new Date(b.eventDate)
+    return dateA - dateB // Ordenar por fecha ascendente (más próximos primero)
+  })
+})
+
+const pastTickets = computed(() => {
+  const now = new Date()
+  return tickets.value.filter(ticket => {
+    if (!ticket.eventDate) return false
+    const eventDate = new Date(ticket.eventDate)
+    return eventDate < now
+  }).sort((a, b) => {
+    const dateA = new Date(a.eventDate)
+    const dateB = new Date(b.eventDate)
+    return dateB - dateA // Ordenar por fecha descendente (más recientes primero)
+  })
+})
 
 const goToLogin = () => router.push('/login?redirect=/misEntradas')
 
@@ -244,10 +325,172 @@ onMounted(loadTickets)
   font-size: 2.5rem;
 }
 
+.tickets-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.tickets-section {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 32px;
+  padding: 24px 32px;
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(3, 7, 18, 0.4);
+  backdrop-filter: blur(12px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.section-header:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(3, 7, 18, 0.5);
+}
+
+.section-header__content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+}
+
+.section-header__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.section-header__icon.upcoming {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(52, 211, 153, 0.2));
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.section-header__icon.past {
+  background: linear-gradient(135deg, rgba(107, 114, 128, 0.2), rgba(156, 163, 175, 0.2));
+  color: #9ca3af;
+  border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+.section-header__title {
+  margin: 0 0 6px 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #f9fafb;
+}
+
+.section-header__subtitle {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 0.95rem;
+}
+
+.section-header__badge {
+  flex-shrink: 0;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.badge--upcoming {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.badge--past {
+  background: linear-gradient(135deg, #6b7280, #9ca3af);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+}
+
 .tickets-grid {
   display: grid;
   gap: 24px;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+@media (max-width: 768px) {
+  .tickets-grid {
+    gap: 16px;
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .tickets-grid {
+    gap: 12px;
+  }
+}
+
+.tickets-grid--past {
+  opacity: 0.85;
+}
+
+.ticket-card--upcoming {
+  position: relative;
+}
+
+.ticket-card--upcoming::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #10b981, #34d399);
+  border-radius: 16px 16px 0 0;
+  z-index: 1;
+}
+
+.ticket-card--past {
+  position: relative;
+  opacity: 0.9;
+}
+
+.ticket-card--past::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #6b7280, #9ca3af);
+  border-radius: 16px 16px 0 0;
+  z-index: 1;
 }
 
 .spinner-border {
@@ -271,6 +514,97 @@ onMounted(loadTickets)
 
   .tickets-wrapper::before {
     display: none;
+  }
+
+  .tickets-sections {
+    gap: 32px;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .section-header__content {
+    width: 100%;
+  }
+
+  .section-header__badge {
+    align-self: flex-end;
+  }
+
+  .section-header__title {
+    font-size: 1.4rem;
+  }
+
+  .section-header__subtitle {
+    font-size: 0.85rem;
+  }
+
+  .section-header__icon {
+    width: 48px;
+    height: 48px;
+    font-size: 1.3rem;
+  }
+
+  .badge {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 12px;
+    font-size: 0.85rem;
+  }
+
+  .tickets-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tickets-grid {
+    gap: 12px;
+  }
+
+  .tickets-wrapper {
+    padding: 60px 12px 30px;
+  }
+
+  .page-header {
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+
+  .page-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .page-header p {
+    font-size: 0.9rem;
+  }
+
+  .section-header {
+    padding: 14px;
+    margin-bottom: 20px;
+  }
+
+  .section-header__content {
+    gap: 12px;
+  }
+
+  .section-header__icon {
+    width: 44px;
+    height: 44px;
+    font-size: 1.2rem;
+  }
+
+  .section-header__title {
+    font-size: 1.25rem;
+  }
+
+  .section-header__subtitle {
+    font-size: 0.8rem;
   }
 }
 

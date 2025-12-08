@@ -62,7 +62,7 @@
         <div v-show="activeTab === 'datos'" class="tab-pane active">
           <form @submit.prevent="updateProfile" class="form-section">
             <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e5e7eb;">
-              <h2 style="margin: 0;">Mis datos personales</h2>
+              <h2 class="section-title">Mis datos personales</h2>
             </div>
 
             <div class="form-grid">
@@ -166,7 +166,7 @@
         <div v-show="activeTab === 'seguridad'" class="tab-pane">
           <div class="form-section">
             <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e5e7eb;">
-              <h2 style="margin: 0;">Cambiar contraseña</h2>
+              <h2 class="section-title">Cambiar contraseña</h2>
             </div>
 
             <form @submit.prevent="changePassword" class="password-form">
@@ -303,7 +303,7 @@
         <div v-show="activeTab === 'cuenta'" class="tab-pane">
           <div class="form-section">
             <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e5e7eb;">
-              <h2 style="margin: 0;">Gestión de cuenta</h2>
+              <h2 class="section-title">Gestión de cuenta</h2>
             </div>
 
             <!-- Ajuste de notificaciones -->
@@ -470,9 +470,8 @@
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
+    <Footer />
   </div>
 </template>
 
@@ -1039,6 +1038,20 @@ const onToggleNotifications = async (checked) => {
   flex-direction: column;
   font-family: 'Poppins', sans-serif;
   background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  width: 100%;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Asegurar que el Footer ocupe todo el ancho */
+.perfil-page :deep(footer),
+.perfil-page footer {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 .perfil-container {
@@ -1334,11 +1347,12 @@ const onToggleNotifications = async (checked) => {
 }
 
 /* ========== FORM SECTIONS ========== */
-.form-section h2 {
+.form-section h2,
+.section-title {
   color: var(--text-dark);
   font-size: 24px;
   font-weight: 700;
-  margin-bottom: 30px;
+  margin: 0;
   padding-bottom: 15px;
   border-bottom: 2px solid var(--border-color);
 }
@@ -2195,11 +2209,12 @@ input:checked + .slider:before {
     flex: 0 1 auto;
     min-width: 110px;
     padding: 15px 12px;
-    font-size: 13px;
+    font-size: 16px;
+    font-weight: 600;
   }
 
   .tab-btn i {
-    font-size: 16px;
+    font-size: 18px;
   }
 
   .perfil-content {
@@ -2231,8 +2246,19 @@ input:checked + .slider:before {
     width: 100%;
   }
 
-  .form-section h2 {
-    font-size: 20px;
+  .form-section h2,
+  .section-title {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    line-height: 1.3;
+  }
+
+  .form-group label {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    letter-spacing: 0.8px;
   }
 }
 
@@ -2269,13 +2295,14 @@ input:checked + .slider:before {
 
   .tab-btn {
     flex: 0 0 auto;
-    min-width: 95px;
-    padding: 12px 8px;
-    font-size: 11px;
+    min-width: 100px;
+    padding: 14px 10px;
+    font-size: 15px;
+    font-weight: 600;
   }
 
   .tab-btn i {
-    font-size: 14px;
+    font-size: 17px;
   }
 
   .role-badge {
@@ -2287,8 +2314,19 @@ input:checked + .slider:before {
     padding: 15px;
   }
 
-  .form-section h2 {
-    font-size: 18px;
+  .form-section h2,
+  .section-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 18px;
+    line-height: 1.3;
+  }
+
+  .form-group label {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    letter-spacing: 0.7px;
   }
 }
 
