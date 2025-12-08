@@ -96,12 +96,34 @@ export const useEvents = () => {
     })
   }
 
+  const getUniqueVenues = async () => {
+    try {
+      const data = await $fetch(`${config.public.apiBase}/events/venues`)
+      return data || []
+    } catch (error) {
+      console.error('Error obteniendo lugares:', error)
+      return []
+    }
+  }
+
+  const getUniqueLocations = async () => {
+    try {
+      const data = await $fetch(`${config.public.apiBase}/events/locations`)
+      return data || []
+    } catch (error) {
+      console.error('Error obteniendo ubicaciones:', error)
+      return []
+    }
+  }
+
   return { 
     getEvents, 
     getManagedEvents,
     createEvent, 
     updateEvent, 
     deleteEvent,
-    getEventAttendees
+    getEventAttendees,
+    getUniqueVenues,
+    getUniqueLocations
   }
 }

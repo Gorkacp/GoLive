@@ -124,4 +124,24 @@ public class EventController {
             return ResponseEntity.internalServerError().body("Error al obtener eventos: " + e.getMessage());
         }
     }
+
+    @GetMapping("/venues")
+    public ResponseEntity<?> getUniqueVenues() {
+        try {
+            List<String> venues = service.getUniqueVenues();
+            return ResponseEntity.ok(venues);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al obtener lugares: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/locations")
+    public ResponseEntity<?> getUniqueLocations() {
+        try {
+            List<String> locations = service.getUniqueLocations();
+            return ResponseEntity.ok(locations);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al obtener ubicaciones: " + e.getMessage());
+        }
+    }
 }

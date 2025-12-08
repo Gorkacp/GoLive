@@ -144,4 +144,36 @@ public class EventService {
     public void deleteEvent(String id) {
         repository.deleteById(id);
     }
+
+    /**
+     * Obtiene todos los lugares/recintos únicos de los eventos existentes
+     */
+    public List<String> getUniqueVenues() {
+        List<Event> allEvents = repository.findAll();
+        Set<String> uniqueVenues = new HashSet<>();
+        for (Event event : allEvents) {
+            if (event.getVenue() != null && !event.getVenue().trim().isEmpty()) {
+                uniqueVenues.add(event.getVenue().trim());
+            }
+        }
+        return new ArrayList<>(uniqueVenues).stream()
+                .sorted()
+                .toList();
+    }
+
+    /**
+     * Obtiene todas las ubicaciones únicas de los eventos existentes
+     */
+    public List<String> getUniqueLocations() {
+        List<Event> allEvents = repository.findAll();
+        Set<String> uniqueLocations = new HashSet<>();
+        for (Event event : allEvents) {
+            if (event.getLocation() != null && !event.getLocation().trim().isEmpty()) {
+                uniqueLocations.add(event.getLocation().trim());
+            }
+        }
+        return new ArrayList<>(uniqueLocations).stream()
+                .sorted()
+                .toList();
+    }
 }

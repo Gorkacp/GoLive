@@ -518,13 +518,59 @@
 
                 <!-- Lugar y Ubicación -->
                 <div class="form-row">
-                  <div class="form-group">
+                  <div class="form-group" style="position: relative;" ref="venueGroupRef">
                     <label class="form-label">Lugar/Recinto</label>
-                    <input type="text" v-model="venue" class="form-input" placeholder="Ej: Palacio Vistalegre" required />
+                    <input 
+                      type="text" 
+                      v-model="venue" 
+                      class="form-input" 
+                      placeholder="Ej: Palacio Vistalegre" 
+                      @focus="showVenueSuggestions = true; filterVenues()"
+                      @blur="handleVenueBlur"
+                      @input="filterVenues"
+                      required 
+                    />
+                    <div 
+                      v-if="showVenueSuggestions && filteredVenues.length > 0" 
+                      class="suggestions-dropdown"
+                      @mousedown.prevent
+                    >
+                      <div 
+                        v-for="v in filteredVenues" 
+                        :key="v"
+                        class="suggestion-item"
+                        @mousedown.prevent="selectVenue(v)"
+                      >
+                        <i class="fas fa-map-marker-alt me-2"></i>{{ v }}
+                      </div>
+                    </div>
                   </div>
-                  <div class="form-group">
+                  <div class="form-group" style="position: relative;" ref="locationGroupRef">
                     <label class="form-label">Ubicación Exacta</label>
-                    <input type="text" v-model="location" class="form-input" placeholder="Dirección completa" required />
+                    <input 
+                      type="text" 
+                      v-model="location" 
+                      class="form-input" 
+                      placeholder="Dirección completa" 
+                      @focus="showLocationSuggestions = true; filterLocations()"
+                      @blur="handleLocationBlur"
+                      @input="filterLocations"
+                      required 
+                    />
+                    <div 
+                      v-if="showLocationSuggestions && filteredLocations.length > 0" 
+                      class="suggestions-dropdown"
+                      @mousedown.prevent
+                    >
+                      <div 
+                        v-for="loc in filteredLocations" 
+                        :key="loc"
+                        class="suggestion-item"
+                        @mousedown.prevent="selectLocation(loc)"
+                      >
+                        <i class="fas fa-location-dot me-2"></i>{{ loc }}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1549,8 +1595,16 @@ const category = ref('')
 const imageUrlInput = ref('')
 const zones = ref([{ name: 'General', price: 40, availableTickets: 100 }])
 const editingEvent = ref(null)
+const availableVenues = ref([])
+const availableLocations = ref([])
+const showVenueSuggestions = ref(false)
+const showLocationSuggestions = ref(false)
+const filteredVenues = ref([])
+const filteredLocations = ref([])
+const venueGroupRef = ref(null)
+const locationGroupRef = ref(null)
 
-const { getManagedEvents, createEvent, updateEvent, deleteEvent, getEventAttendees } = useEvents()
+const { getManagedEvents, createEvent, updateEvent, deleteEvent, getEventAttendees, getUniqueVenues, getUniqueLocations } = useEvents()
 const { fetchOverview } = useDashboard()
 const { getEventTransactions } = useTransactions()
 const { getSalesTrend, getEventAnalytics } = useAnalytics()
@@ -2071,7 +2125,7 @@ const removeZone = (index) => {
   zones.value = zones.value.filter((_, idx) => idx !== index)
 }
 
-const selectEvent = (event) => {
+const selectEvent = async (event) => {
   editingEvent.value = event
   title.value = event.title
   venue.value = event.venue
@@ -2083,6 +2137,8 @@ const selectEvent = (event) => {
   zones.value = event.zones?.length ? JSON.parse(JSON.stringify(event.zones)) : [{ name: 'General', price: 40, availableTickets: 100 }]
   showFormPanel.value = true
   goToSection('form')
+  // Cargar lugares y ubicaciones disponibles
+  await loadVenuesAndLocations()
 }
 
 const resetForm = () => {
@@ -2097,10 +2153,93 @@ const resetForm = () => {
   zones.value = [{ name: 'General', price: 40, availableTickets: 100 }]
 }
 
-const openNewEventForm = () => {
+const openNewEventForm = async () => {
   resetForm()
   showFormPanel.value = true
   goToSection('form')
+  // Cargar lugares y ubicaciones disponibles
+  await loadVenuesAndLocations()
+}
+
+const loadVenuesAndLocations = async () => {
+  try {
+    availableVenues.value = await getUniqueVenues()
+    availableLocations.value = await getUniqueLocations()
+  } catch (error) {
+    console.error('Error cargando lugares y ubicaciones:', error)
+  }
+}
+
+const filterVenues = () => {
+  const search = venue.value.toLowerCase().trim()
+  if (!search) {
+    filteredVenues.value = availableVenues.value.slice(0, 10)
+  } else {
+    filteredVenues.value = availableVenues.value
+      .filter(v => v.toLowerCase().includes(search))
+      .slice(0, 10)
+  }
+}
+
+const filterLocations = () => {
+  const search = location.value.toLowerCase().trim()
+  if (!search) {
+    filteredLocations.value = availableLocations.value.slice(0, 10)
+  } else {
+    filteredLocations.value = availableLocations.value
+      .filter(loc => loc.toLowerCase().includes(search))
+      .slice(0, 10)
+  }
+}
+
+const selectVenue = (selectedVenue) => {
+  venue.value = selectedVenue
+  showVenueSuggestions.value = false
+}
+
+const selectLocation = (selectedLocation) => {
+  location.value = selectedLocation
+  showLocationSuggestions.value = false
+}
+
+const handleVenueBlur = (e) => {
+  // Delay para permitir clicks en sugerencias
+  setTimeout(() => {
+    if (process.client && venueGroupRef.value) {
+      const activeElement = document.activeElement
+      if (!venueGroupRef.value.contains(activeElement)) {
+        showVenueSuggestions.value = false
+      }
+    } else {
+      showVenueSuggestions.value = false
+    }
+  }, 200)
+}
+
+const handleLocationBlur = (e) => {
+  // Delay para permitir clicks en sugerencias
+  setTimeout(() => {
+    if (process.client && locationGroupRef.value) {
+      const activeElement = document.activeElement
+      if (!locationGroupRef.value.contains(activeElement)) {
+        showLocationSuggestions.value = false
+      }
+    } else {
+      showLocationSuggestions.value = false
+    }
+  }, 200)
+}
+
+// Cerrar dropdowns al hacer click fuera
+const handleClickOutside = (event) => {
+  if (process.client) {
+    if (venueGroupRef.value && !venueGroupRef.value.contains(event.target)) {
+      showVenueSuggestions.value = false
+    }
+    if (locationGroupRef.value && !locationGroupRef.value.contains(event.target)) {
+      showLocationSuggestions.value = false
+    }
+  }
 }
 
 const closeFormPanel = () => {
@@ -2842,6 +2981,8 @@ onMounted(async () => {
   if (process.client) {
     updateViewport()
     window.addEventListener('resize', updateViewport)
+    // Listener para cerrar dropdowns al hacer click fuera
+    document.addEventListener('click', handleClickOutside)
   }
 
   // Si no hay datos en sessionStorage pero sí token válido, intentamos
@@ -2880,6 +3021,9 @@ onMounted(async () => {
 
 // Watch para cargar datos cuando cambia la sección activa
 watch(activeSection, async (newSection) => {
+  if (newSection === 'form' && showFormPanel.value) {
+    await loadVenuesAndLocations()
+  }
   if (newSection === 'notifications') {
     await loadNotificationStats()
   }
@@ -2934,6 +3078,7 @@ onUnmounted(() => {
   }
   if (process.client) {
     window.removeEventListener('resize', updateViewport)
+    document.removeEventListener('click', handleClickOutside)
   }
 })
 </script>
@@ -2963,7 +3108,7 @@ onUnmounted(() => {
 
 .backoffice-shell {
   box-sizing: border-box;
-  width: min(1400px, 100%);
+  width: 100%;
   margin-left: 0;
   margin-right: auto;
   display: grid;
@@ -2971,6 +3116,16 @@ onUnmounted(() => {
   gap: 40px;
   align-items: stretch;
   padding: 0 clamp(16px, 4vw, 48px) 40px 0;
+}
+
+/* Centrar el contenido en desktop entre sidebar y borde derecho */
+@media (min-width: 1201px) {
+  .backoffice-content {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+  }
 }
 
 .backoffice-sidebar {
@@ -3229,6 +3384,7 @@ onUnmounted(() => {
   gap: 32px;
   width: 100%;
   max-width: 100%;
+  padding-top: 24px;
 }
 
 .content-header {
@@ -4063,6 +4219,78 @@ onUnmounted(() => {
   box-shadow: 0 0 0 3px rgba(255, 0, 87, 0.1), 0 0 20px rgba(255, 138, 0, 0.2);
   background: rgba(255, 255, 255, 0.08);
   transform: translateY(-1px);
+}
+
+.suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, rgba(20, 20, 20, 0.98) 0%, rgba(15, 15, 15, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  margin-top: 4px;
+  max-height: 250px;
+  height: 250px;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  z-index: 1000;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  will-change: scroll-position;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.suggestions-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-thumb {
+  background: #ff0057;
+  border-radius: 3px;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #ff6b35;
+}
+
+.suggestion-item {
+  padding: 12px 16px;
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover {
+  background: linear-gradient(135deg, rgba(255, 0, 87, 0.15), rgba(255, 138, 0, 0.15));
+  color: #fff;
+  transform: translateX(4px);
+}
+
+.suggestion-item i {
+  color: rgba(255, 138, 0, 0.7);
+  font-size: 0.9rem;
 }
 
 .form-input::placeholder {
