@@ -81,6 +81,7 @@
           <NuxtLink 
             to="/perfil" 
             class="dropdown-item-profile"
+            :class="{ active: $route.path === '/perfil' }"
             @click="closeProfileMenu"
           >
             <i class="bi bi-person me-2"></i>{{ $t('Mi perfil') }}
@@ -88,6 +89,7 @@
           <NuxtLink 
             to="/misEntradas" 
             class="dropdown-item-profile"
+            :class="{ active: $route.path === '/misEntradas' }"
             @click="closeProfileMenu"
           >
             <i class="bi bi-ticket-perforated me-2"></i>{{ $t('Mis entradas') }}
@@ -96,6 +98,7 @@
             v-if="userRole === 'admin' || userRole === 'super_user'"
             to="/backoffice" 
             class="dropdown-item-profile"
+            :class="{ active: $route.path === '/backoffice' }"
             @click="closeProfileMenu"
           >
             <i class="bi bi-gear me-2"></i>{{ $t('Backoffice') }}
@@ -104,6 +107,7 @@
             v-if="userRole === 'super_user'"
             to="/oficina" 
             class="dropdown-item-profile"
+            :class="{ active: $route.path === '/oficina' }"
             @click="closeProfileMenu"
           >
             <i class="bi bi-building me-2"></i>{{ $t('Oficina') }}
@@ -525,6 +529,13 @@ const setLanguage = (lang) => {
   background: rgba(255, 0, 87, 0.1);
   color: #ff0057;
   text-decoration: none;
+}
+
+.dropdown-item-profile.active {
+  background: rgba(255, 0, 87, 0.15);
+  color: #ff0057;
+  font-weight: 600;
+  border-left: 3px solid #ff0057;
 }
 
 .dropdown-item-profile i {

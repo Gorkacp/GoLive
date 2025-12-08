@@ -181,5 +181,6 @@
   "Historial de {count} entrada(s) de eventos ya realizados": "History of {count} ticket(s) from past events",
   "Email": "Email",
   "Horario": "Schedule",
-  "HorarioTexto": "Mon - Fri: 9:00 - 18:00"
+  "HorarioTexto": "Mon - Fri: 9:00 - 18:00",
+  "Mi perfil": "My Profile"
 }
