@@ -182,5 +182,11 @@
   "Email": "Email",
   "Horario": "Schedule",
   "HorarioTexto": "Mon - Fri: 9:00 - 18:00",
-  "Mi perfil": "My Profile"
+  "Mi perfil": "My Profile",
+  "Soporte": "Support",
+  "Ayuda": "Help",
+  "Términos": "Terms and Conditions",
+  "Privacidad": "Privacy Policy",
+  "Contacto": "Contact",
+  "Abrir chat de asistencia": "Open assistance chat"
 }
