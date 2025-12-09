@@ -18,7 +18,7 @@ GoLive es una plataforma integral que permite a los organizadores de eventos ges
 ## 🛠️ Stack Tecnológico
 
 ### Frontend
-- **Nuxt.js 4** - Framework Vue.js con SSR y optimizaciones automáticas
+- **Nuxt.js 3** - Framework Vue.js con SSR y optimizaciones automáticas
 - **Vue 3** - Framework JavaScript reactivo
 - **Pinia** - Gestión de estado
 - **Bootstrap 5** - Framework CSS para diseño responsivo
