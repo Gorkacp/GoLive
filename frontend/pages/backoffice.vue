@@ -1687,7 +1687,7 @@ const handleNavClick = async (sectionId) => {
     showFormPanel.value = false
   }
   
-  // En móvil/PWA: cerrar sidebar primero antes de hacer scroll
+  // En móvil/PWA: cerrar sidebar primero y esperar antes de cambiar sección
   if (!isDesktop.value) {
     isSidebarOpen.value = false
     // Asegurar que el body no quede bloqueado
@@ -1695,10 +1695,9 @@ const handleNavClick = async (sectionId) => {
       document.body.style.overflow = ''
       document.body.style.position = ''
     }
-    // Esperar a que el sidebar se cierre completamente antes de hacer scroll
+    // Esperar a que el sidebar se cierre completamente (300ms para la animación)
     await nextTick()
-    // Pequeño delay adicional para asegurar que el overlay se haya removido
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise(resolve => setTimeout(resolve, 300))
   }
   
   goToSection(sectionId)
@@ -3061,8 +3060,24 @@ watch(activeSection, async (newSection) => {
   
   if (newSection === 'analytics' && dashboard.value) {
     await nextTick()
-    createRevenueChart()
-    createSalesTrendChart()
+    // En móvil/PWA, esperar un poco más para que el sidebar termine de cerrarse
+    // y no bloquear el renderizado con los gráficos pesados
+    const delay = !isDesktop.value ? 200 : 0
+    setTimeout(() => {
+      // Usar requestIdleCallback si está disponible para no bloquear el renderizado
+      if (process.client && window.requestIdleCallback) {
+        requestIdleCallback(() => {
+          createRevenueChart()
+          createSalesTrendChart()
+        }, { timeout: 1000 })
+      } else {
+        // Fallback: usar setTimeout para diferir la creación de gráficos
+        setTimeout(() => {
+          createRevenueChart()
+          createSalesTrendChart()
+        }, delay)
+      }
+    }, delay)
   }
   
   if (newSection === 'billing' && dashboard.value) {
