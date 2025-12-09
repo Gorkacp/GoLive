@@ -1636,9 +1636,17 @@ const updateViewport = () => {
 const toggleSidebar = () => {
   if (isDesktop.value) return
   isSidebarOpen.value = !isSidebarOpen.value
+  
+  // Asegurar que el body no quede bloqueado cuando se cierra el sidebar
+  if (!isSidebarOpen.value && process.client) {
+    document.body.style.overflow = ''
+    document.body.style.position = ''
+  }
 }
 
 const scrollToSection = (sectionId) => {
+  if (!process.client) return
+  
   const target = {
     dashboard: dashboardSection.value,
     events: eventsSection.value,
@@ -1649,7 +1657,15 @@ const scrollToSection = (sectionId) => {
   }[sectionId]
 
   if (target) {
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    // En PWA/móvil, usar scroll más suave y asegurar que el body no esté bloqueado
+    if (document.body.style.overflow === 'hidden') {
+      document.body.style.overflow = ''
+    }
+    
+    // Usar requestAnimationFrame para asegurar que el DOM esté listo
+    requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
   }
 }
 
@@ -1658,7 +1674,7 @@ const goToSection = (sectionId) => {
   nextTick(() => scrollToSection(sectionId))
 }
 
-const handleNavClick = (sectionId) => {
+const handleNavClick = async (sectionId) => {
   // Cerrar formulario si se cambia de sección
   if (activeSection.value === 'form' && sectionId !== 'form') {
     showFormPanel.value = false
@@ -1671,10 +1687,21 @@ const handleNavClick = (sectionId) => {
     showFormPanel.value = false
   }
   
-  goToSection(sectionId)
+  // En móvil/PWA: cerrar sidebar primero antes de hacer scroll
   if (!isDesktop.value) {
     isSidebarOpen.value = false
+    // Asegurar que el body no quede bloqueado
+    if (process.client) {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+    }
+    // Esperar a que el sidebar se cierre completamente antes de hacer scroll
+    await nextTick()
+    // Pequeño delay adicional para asegurar que el overlay se haya removido
+    await new Promise(resolve => setTimeout(resolve, 100))
   }
+  
+  goToSection(sectionId)
 }
 
 const getEventDetails = (eventId) => {
