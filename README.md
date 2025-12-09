@@ -203,17 +203,6 @@ GoLive/
 - Autorización basada en roles
 - Sanitización de inputs
 
-## 🚧 Próximas Mejoras
-
-- [ ] Tests unitarios y de integración
-- [ ] Implementación de Redis para caché
-- [ ] Rate limiting para protección de APIs
-- [ ] Documentación Swagger/OpenAPI
-- [ ] Integración con más pasarelas de pago (Stripe)
-- [ ] Sistema de reembolsos
-- [ ] App móvil nativa (React Native/Flutter)
-- [ ] Mejoras en el chat asistente con IA más avanzada
-
 ## 📝 Licencia
 
 Este proyecto es de código abierto y está disponible bajo la licencia MIT.
