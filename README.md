@@ -35,12 +35,22 @@ GoLive es una plataforma integral que permite a los organizadores de eventos ges
 
 ## 🖼️ Demo / Screenshots
 
-> **Nota:** Añade capturas de pantalla de:
-> - Panel de administración con dashboard
-> - Proceso de compra de entradas
-> - Tickets con códigos QR
-> - Dashboard con métricas
-> - PWA instalada en móvil
+### Página Principal
+![Página Principal](./image/index.png)
+
+### Catálogo de Conciertos
+![Catálogo de Conciertos](./image/Conciertos.png)
+
+### Proceso de Compra de Entradas
+![Proceso de Compra](./image/compra.png)
+
+### Tickets con Códigos QR
+![Tickets con QR](./image/entrada.png)
+
+### Panel de Administración (Dashboard)
+![Panel de Administración](./image/backoffice.png)
+
+---
 
 **Demo en vivo:** [https://golive-hu5d.onrender.com](https://golive-hu5d.onrender.com)
 
