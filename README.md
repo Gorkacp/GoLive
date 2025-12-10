@@ -1,6 +1,24 @@
 # 🎵 GoLive - Plataforma de Venta de Entradas para Eventos
 
-Un proyecto Full Stack que nace de la necesidad de crear una solución completa y profesional para la gestión y venta de entradas para eventos musicales (conciertos y festivales).
+[![Java Version](https://img.shields.io/badge/java-17-blue.svg)](https://www.oracle.com/java/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.7-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Node Version](https://img.shields.io/badge/node-18%2B-green.svg)](https://nodejs.org/)
+[![Nuxt](https://img.shields.io/badge/Nuxt-3.12.0-00DC82.svg)](https://nuxt.com/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248.svg)](https://www.mongodb.com/cloud/atlas)
+
+Un proyecto Full Stack profesional que nace de la necesidad de crear una solución completa y escalable para la gestión y venta de entradas para eventos musicales (conciertos y festivales).
+
+## 📋 TL;DR - Características Destacadas
+
+- 🎫 **PWA instalable** con notificaciones push nativas
+- 💳 **Pagos reales** integrados con PayPal
+- 🎟️ **Tickets con QR y PDF** generados automáticamente
+- 📊 **Dashboard admin** con métricas en tiempo real y gráficos
+- 🌍 **Multiidioma** (Español, Inglés, Portugués)
+- 🔔 **Notificaciones push** para recordatorios de eventos
+- 🔐 **Autenticación JWT** con refresh tokens y RBAC
+- 🗺️ **Mapas interactivos** para ubicación de eventos
 
 ## 🎯 ¿Qué hace el proyecto?
 
@@ -15,67 +33,234 @@ GoLive es una plataforma integral que permite a los organizadores de eventos ges
 - **Aplicación PWA** instalable en dispositivos móviles
 - **Multiidioma** (Español, Inglés, Portugués)
 
-## 🛠️ Stack Tecnológico
+## 🖼️ Demo / Screenshots
 
-### Frontend
-- **Nuxt.js 3** - Framework Vue.js con SSR y optimizaciones automáticas
-- **Vue 3** - Framework JavaScript reactivo
-- **Pinia** - Gestión de estado
-- **Bootstrap 5** - Framework CSS para diseño responsivo
-- **Bootstrap Icons & Font Awesome** - Iconografía
-- **Chart.js** - Gráficos y visualización de datos
-- **Leaflet** - Mapas interactivos
-- **Vue I18n** - Internacionalización
-- **Axios** - Cliente HTTP para peticiones API
+> **Nota:** Añade capturas de pantalla de:
+> - Panel de administración con dashboard
+> - Proceso de compra de entradas
+> - Tickets con códigos QR
+> - Dashboard con métricas
+> - PWA instalada en móvil
 
-### Backend
-- **Spring Boot 3.2.7** - Framework Java para aplicaciones empresariales
-- **Java 17** - Lenguaje de programación
-- **Spring Security** - Autenticación y autorización
-- **Spring Data MongoDB** - Integración con base de datos
-- **JWT (JSON Web Tokens)** - Autenticación stateless
-- **BCrypt** - Encriptación de contraseñas
-- **Lombok** - Reducción de código boilerplate
-- **Maven** - Gestión de dependencias
+**Demo en vivo:** [https://golive-hu5d.onrender.com](https://golive-hu5d.onrender.com)
 
-### Base de Datos
+## 🏗️ Arquitectura
+
+### Diagrama de Componentes
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        CLIENTE (Browser)                      │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  Frontend (Nuxt.js 3 + Vue 3)                        │   │
+│  │  - PWA instalable                                     │   │
+│  │  - SSR/SSG                                            │   │
+│  │  - Pinia (State Management)                          │   │
+│  │  - Vue I18n (Multiidioma)                            │   │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            │ HTTP/REST API
+                            │
+┌───────────────────────────▼──────────────────────────────────┐
+│                    Backend (Spring Boot 3.2.7)               │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  Controllers (REST API)                               │   │
+│  │  - AuthController                                     │   │
+│  │  - EventController                                    │   │
+│  │  - TransactionController                             │   │
+│  │  - UserController                                     │   │
+│  └──────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  Services (Lógica de Negocio)                        │   │
+│  │  - AuthenticationService                             │   │
+│  │  - EventService                                       │   │
+│  │  - PaymentService                                     │   │
+│  │  - EmailService                                       │   │
+│  │  - PushNotificationService                           │   │
+│  └──────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  Security (Spring Security + JWT)                    │   │
+│  │  - JWT Authentication                                 │   │
+│  │  - RBAC (Role-Based Access Control)                  │   │
+│  │  - BCrypt Password Encryption                        │   │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            │ Spring Data MongoDB
+                            │
+┌───────────────────────────▼──────────────────────────────────┐
+│              MongoDB Atlas (Base de Datos)                    │
+│  - Users                                                     │
+│  - Events                                                    │
+│  - Transactions                                              │
+│  - Tickets                                                   │
+│  - Push Subscriptions                                        │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│              APIs y Servicios Externos                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │  PayPal API  │  │ SendGrid API │  │ Web Push     │      │
+│  │  (Pagos)    │  │  (Emails)    │  │ (VAPID)      │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Stack Tecnológico
+
+#### Frontend
+| Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| **Nuxt.js** | 3.12.0 | Framework Vue.js con SSR y optimizaciones automáticas |
+| **Vue 3** | 3.5.22 | Framework JavaScript reactivo |
+| **Pinia** | 3.0.3 | Gestión de estado global |
+| **Bootstrap 5** | 5.3.8 | Framework CSS para diseño responsivo |
+| **Chart.js** | 4.5.1 | Gráficos y visualización de datos |
+| **Leaflet** | 1.9.4 | Mapas interactivos |
+| **Vue I18n** | 9.9.0 | Internacionalización multiidioma |
+| **Axios** | 1.6.0 | Cliente HTTP para peticiones API |
+
+#### Backend
+| Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| **Spring Boot** | 3.2.7 | Framework Java para aplicaciones empresariales |
+| **Java** | 17 | Lenguaje de programación |
+| **Spring Security** | - | Autenticación y autorización |
+| **Spring Data MongoDB** | - | Integración con base de datos |
+| **JWT (jjwt)** | 0.11.5 | Autenticación stateless |
+| **BCrypt** | - | Encriptación de contraseñas |
+| **Lombok** | - | Reducción de código boilerplate |
+| **Maven** | - | Gestión de dependencias |
+
+#### Base de Datos
 - **MongoDB** - Base de datos NoSQL
-- **MongoDB Atlas** - Base de datos en la nube
+- **MongoDB Atlas** - Base de datos en la nube con alta disponibilidad
 
-### DevOps & Infraestructura
+#### DevOps & Infraestructura
 - **Docker** - Containerización
 - **Docker Compose** - Orquestación de contenedores
-- **Maven** - Build automation
 
-### Librerías y Utilidades
-- **ZXing** - Generación de códigos QR
-- **Apache PDFBox** - Generación de PDFs
-- **Web Push (VAPID)** - Notificaciones push para PWA
-- **QRCode** - Generación de códigos QR en frontend
+#### Librerías y Utilidades
+- **ZXing** (3.5.2) - Generación de códigos QR en backend
+- **Apache PDFBox** (2.0.29) - Generación de PDFs
+- **Web Push** (5.1.1) - Notificaciones push con protocolo VAPID
+- **QRCode** (1.5.4) - Generación de códigos QR en frontend
 - **html2canvas & jsPDF** - Exportación de contenido a PDF
 
-## 🔌 APIs y Servicios Externos Integrados
+## 🔐 Seguridad
 
-### PayPal API
-- **Integración completa** para procesamiento de pagos
-- **SDK de PayPal** para botones de pago
-- **Captura de pagos** y gestión de transacciones
-- **Validación de órdenes** y manejo de webhooks
+GoLive implementa múltiples capas de seguridad siguiendo las mejores prácticas de la industria:
 
-### SendGrid API
-- **Envío de emails transaccionales** mediante API REST
-- **Emails de recuperación de contraseña**
-- **Confirmación de compra** con tickets adjuntos
-- **Notificaciones de eventos** y recordatorios
+### Autenticación y Autorización
+- **JWT (JSON Web Tokens)**: Autenticación stateless con tokens seguros
+- **Refresh Tokens**: Renovación automática de tokens para mantener sesiones seguras
+- **RBAC (Role-Based Access Control)**: Sistema de roles (user, admin, super_user) con Spring Security
+- **Protección de rutas**: Middleware en frontend y guards en backend
 
-### Web Push (VAPID)
-- **Notificaciones push nativas** para PWA
-- **Protocolo VAPID** para autenticación
-- **Suscripciones de usuarios** para notificaciones
+### Encriptación y Protección de Datos
+- **BCrypt**: Encriptación de contraseñas con hashing seguro (salt rounds)
+- **HTTPS**: Comunicación segura en producción
+- **Validación de datos**: Validación en frontend y backend con Spring Validation
+- **Sanitización de inputs**: Prevención de XSS e inyección de código
 
-### MongoDB Atlas
-- **Base de datos en la nube** con alta disponibilidad
-- **Conexión segura** mediante URI con autenticación
+### Protección de APIs
+- **CORS configurado**: Orígenes permitidos específicos
+- **CSRF Protection**: Configurado en Spring Security
+- **Rate limiting**: (Recomendado para producción)
+- **Validación de inventario**: Prevención de condiciones de carrera en compras
+
+### Variables de Entorno
+- **Secretos fuera del código**: Todas las claves sensibles se gestionan mediante variables de entorno
+- **JWT Secret**: Clave secreta de al menos 32 caracteres para firmar tokens
+
+## 🧪 Testing
+
+El proyecto incluye tests básicos con JUnit 5 y Spring Boot Test:
+
+### Ejecutar Tests
+
+```bash
+cd backend
+mvn test
+```
+
+### Tests Disponibles
+
+- **BackendApplicationTests**: Test básico de carga de contexto de Spring Boot
+
+> **Nota:** Se recomienda expandir la suite de tests con:
+> - Tests unitarios para servicios
+> - Tests de integración para controladores
+> - Tests de repositorios
+> - Tests end-to-end para flujos críticos
+
+## 📁 Estructura del Proyecto
+
+```
+GoLive/
+├── frontend/                 # Aplicación Nuxt.js
+│   ├── components/          # Componentes Vue reutilizables
+│   │   ├── AdvancedSearch.vue
+│   │   ├── ChatAssistant.vue
+│   │   ├── EventCard.vue
+│   │   ├── TicketCard.vue
+│   │   └── Office/          # Componentes del panel admin
+│   ├── pages/               # Páginas y rutas
+│   │   ├── index.vue        # Página principal
+│   │   ├── conciertos.vue
+│   │   ├── festivales.vue
+│   │   ├── backoffice.vue   # Panel admin
+│   │   ├── oficina.vue      # Gestión de usuarios
+│   │   ├── misEntradas.vue
+│   │   └── pay/             # Proceso de pago
+│   ├── composables/         # Lógica reutilizable (hooks)
+│   │   ├── useAuth.js
+│   │   ├── useEvents.js
+│   │   ├── useTransactions.js
+│   │   └── usePushNotifications.js
+│   ├── stores/              # Estado global (Pinia)
+│   │   └── cart.js
+│   ├── plugins/             # Plugins de Nuxt
+│   │   ├── axios.js
+│   │   ├── i18n.js
+│   │   └── pwa.client.js
+│   ├── middleware/          # Middleware de autenticación
+│   │   ├── auth.js
+│   │   └── super-user-only.js
+│   ├── locales/             # Archivos de traducción
+│   │   ├── es.json
+│   │   ├── en.json
+│   │   └── pt.json
+│   └── services/            # Servicios del frontend
+│
+├── backend/                 # Aplicación Spring Boot
+│   ├── src/main/java/com/golive/backend/
+│   │   ├── controller/      # Controladores REST
+│   │   │   ├── AuthController.java
+│   │   │   ├── EventController.java
+│   │   │   ├── TransactionController.java
+│   │   │   └── UserController.java
+│   │   ├── services/        # Lógica de negocio
+│   │   │   ├── AuthenticationService.java
+│   │   │   ├── EventService.java
+│   │   │   ├── PaymentService.java
+│   │   │   └── EmailService.java
+│   │   ├── repository/      # Acceso a datos (MongoDB)
+│   │   ├── model/           # Entidades del dominio
+│   │   ├── dto/             # Data Transfer Objects
+│   │   ├── config/          # Configuración
+│   │   │   ├── SecurityConfig.java
+│   │   │   └── MailConfig.java
+│   │   └── validation/      # Validadores personalizados
+│   ├── src/main/resources/
+│   │   └── application.properties
+│   └── pom.xml
+│
+├── docker-compose.yml       # Configuración Docker
+├── .gitignore
+└── README.md
+```
 
 ## ✨ Funcionalidades Principales
 
@@ -108,31 +293,37 @@ GoLive es una plataforma integral que permite a los organizadores de eventos ges
 - 📱 **Diseño responsive** y mobile-first
 - ⚡ **Optimizaciones de rendimiento** (lazy loading, caching)
 
-## 📁 Estructura del Proyecto
+## 🔌 APIs y Servicios Externos Integrados
 
-```
-GoLive/
-├── frontend/                 # Aplicación Nuxt.js
-│   ├── components/          # Componentes Vue reutilizables
-│   ├── pages/               # Páginas y rutas
-│   ├── composables/         # Lógica reutilizable (hooks)
-│   ├── stores/              # Estado global (Pinia)
-│   ├── plugins/             # Plugins de Nuxt
-│   ├── middleware/          # Middleware de autenticación
-│   ├── locales/             # Archivos de traducción
-│   └── services/            # Servicios del frontend
-│
-├── backend/                 # Aplicación Spring Boot
-│   ├── controller/          # Controladores REST
-│   ├── services/            # Lógica de negocio
-│   ├── repository/          # Acceso a datos (MongoDB)
-│   ├── model/               # Entidades del dominio
-│   ├── dto/                 # Data Transfer Objects
-│   ├── config/              # Configuración (Security, etc.)
-│   └── validation/          # Validadores personalizados
-│
-└── docker-compose.yml       # Configuración Docker
-```
+### PayPal API
+- **Integración completa** para procesamiento de pagos
+- **SDK de PayPal** para botones de pago
+- **Captura de pagos** y gestión de transacciones
+- **Validación de órdenes** y manejo de webhooks
+
+### SendGrid API
+- **Envío de emails transaccionales** mediante API REST
+- **Emails de recuperación de contraseña**
+- **Confirmación de compra** con tickets adjuntos
+- **Notificaciones de eventos** y recordatorios
+
+### Web Push (VAPID)
+- **Notificaciones push nativas** para PWA
+- **Protocolo VAPID** para autenticación
+- **Suscripciones de usuarios** para notificaciones
+
+### MongoDB Atlas
+- **Base de datos en la nube** con alta disponibilidad
+- **Conexión segura** mediante URI con autenticación
+
+## 📊 Estadísticas del Proyecto
+
+- **+42 endpoints REST** implementados
+- **+15 componentes Vue** reutilizables
+- **+10 servicios** de negocio en backend
+- **3 idiomas** soportados (ES, EN, PT)
+- **Arquitectura** frontend/backend completamente separada
+- **PWA** con notificaciones push nativas
 
 ## 💡 ¿Qué aprendí desarrollándolo?
 
@@ -185,31 +376,21 @@ GoLive/
 - ✅ Implementación de **chat asistente** con procesamiento de lenguaje natural básico
 - ✅ Dashboard con **analytics** y métricas de negocio
 
-## 📊 Estadísticas del Proyecto
+## 🤝 Contribuciones
 
-- **+42 endpoints REST** implementados
-- **+15 componentes Vue** reutilizables
-- **+10 servicios** de negocio en backend
-- **3 idiomas** soportados (ES, EN, PT)
-- **Arquitectura** frontend/backend completamente separada
-- **PWA** con notificaciones push nativas
+Este es un proyecto personal, pero cualquier sugerencia, mejora o feedback es bienvenido. Si encuentras algún bug o tienes una idea para mejorar la plataforma, no dudes en abrir un issue o crear un pull request.
 
-## 🔐 Seguridad Implementada
+## 📧 Contacto
 
-- Autenticación JWT con tokens seguros
-- Encriptación de contraseñas con BCrypt
-- Validación de datos en frontend y backend
-- Protección CSRF (configurada en Spring Security)
-- Autorización basada en roles
-- Sanitización de inputs
+**Gorka Carmona Pino**
+
+- Email: gorkacarmonapino@email.com
+- GitHub: [@Gorkacp](https://github.com/Gorkacp)
+- LinkedIn: [gorka-carmona-pino-803902294](https://www.linkedin.com/in/gorka-carmona-pino-803902294/)
 
 ## 📝 Licencia
 
-Este proyecto es de código abierto y está disponible bajo la licencia MIT.
-
-## 👤 Autor
-
-**Gorka Carmona Pino**
+Este proyecto es de código abierto y está disponible bajo la [Licencia MIT](LICENSE).
 
 ---
 
